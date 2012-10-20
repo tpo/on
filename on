@@ -419,6 +419,18 @@ function debug_parameters() {
    echo "exec_params='${exec_params[@]}'"
 }
 
+# this was originally in
+# /opt/source/delivery/rcs_common/lib/common_functions.sh
+function find_hosts() {
+   # if the user defines a variable with a name
+   # that corresponds to the parameter given,
+   # then return that evale'd variable
+   if [ ! "$1" ]; then
+     echo "no machine group $1 has been defined" >&2
+   fi
+   echo "$1"
+}
+
 #--------------------------------------------------------------
 # unit tests
 # enable by uncommenting run_unit_tests in main
