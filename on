@@ -1,0 +1,636 @@
+#!/bin/bash
+## -------------------------------------------------------------------------
+# Autor:    tpospise
+# Datum:    $Date: 2009/10/28 15:15:24 $
+# Name:     $Source: /opt/repository/cvs/integration/rcs_common/bin/rcs_all,v $
+# Revision: $Revision: 1.9 $
+# -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# usage
+# -------------------------------------------------------------------------
+
+function usage() {
+    local rev=$( de_cvs "$Revision: 1.9 $" )
+    local date=$( de_cvs "$Date: 2009/10/28 15:15:24 $" )
+    local src=$( de_cvs "$Source: /opt/repository/cvs/integration/rcs_common/bin/rcs_all,v $" )
+   cat<<EOH
+usage:
+  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] do <"some; commands and -options">
+  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] get </remote/file> [</local/file>]
+  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] put </local/file> [</remote/file>]
+  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] exec </local/file> [<"some args">]*
+  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] term
+  rcs_all              <serverType>|<(server list)>                    list
+
+    rcs_all does "stuff" on a group of servers that is
+    either of type serverType or named in the <(server list)>.
+
+    "stuff" is allways done sequentially, one after the other has completed.
+
+    The "stuff" that rcs_all does can be:
+
+        do    will execute the commands and parameters passed to the
+              command as last parameter on the remote machines
+
+        get   will copy the <remote/file> from the given remote machines
+              onto the local machine. If <local/file> is not given, then
+              the file will be copied to the same path as the remote file is.
+
+              Relative <remote/file> paths will be copied to relative paths
+              *starting from the current working directory*, same as scp would.
+
+              The files will be given a postfix consisting of the name of the
+              host the were fetched from.
+
+        put   will copy the <local/file> to given remote machines. If
+              <remote/file> is not given, then the file will be copied to
+              the same path as <local/file>. Since we're using scp to do
+              the copying, giving a <local/file> with a relative path and
+              omitting the <remote/file> the file will be put into the
+              relative path starting from the HOME directory!
+
+        exec  will execute the given local file with the arguments that
+              follow on the remote machines
+
+        list  will resolve the serverType - that is list the machines that
+              are part of serverType
+
+        term  will open a terminal (shell) on each remote machine
+
+    <(server list)> is a list of host names separated by spaces and
+        enclosed in parenthesis. F.ex. : "(192.168.1.2 webserver mail)"
+        To do something on a single machine pass a list of one machine:
+        "(router1)"
+
+    <options> can be:
+
+        -v be verbose on what rcs_all is doing (on which servers!)
+
+        -i interactive - stdin from the terminal will be forwarded to the
+           remote session. Only available with the "exec" and "do" commands.
+
+        -f (as in force) ignore errors when executing the "do", "get", "put"
+           or "exec" commands. Just continue on the next server. Default is to
+           abort on error.
+
+        -p prefix all output with hostname. Default is to display the output
+           (stdout) unchanged. This option does not apply to the "get" and
+           "put" commands.
+
+    <remote_user> is not allowed to contain any metacharacters such as spaces
+
+    rcs_all is only really usefull if you distribute your ssh key to the
+    target servers.
+
+    $src
+    ${rev}on ${date}
+    Tomas.Pospisek@t-systems.ch (#4279) aka tpo_hp@sourcepole.ch
+
+EOH
+   exit 1
+}
+
+# -------------------------------------------------------------------------
+# further documentation
+# -------------------------------------------------------------------------
+# [1] on redirection:
+#     http://tldp.org/LDP/abs/html/io-redirection.html
+#     http://tldp.org/LDP/abs/html/ioredirintro.html
+#     http://www.zsh.org/mla/users/2003/msg00941.html
+
+# -------------------------------------------------------------------------
+# includes
+# -------------------------------------------------------------------------
+
+. /opt/source/delivery/rcs_common/lib/common_functions.sh
+
+#--------------------------------------------------------------
+# comman line parameters
+# global variables that are set once only in the parse_parameters
+# function
+#--------------------------------------------------------------
+
+be_verbose=
+ignore_error=
+interactive=
+prefix_with_hostname=
+server_type=         # only one of these two
+server_list=         # can be set simultaneously
+remote_user=
+command=
+do_commandline=      # only set with the 'do'                    command
+local_file=          #         "         'get', 'put' and 'exec' commands
+remote_file=         #         "         'get', 'put' and 'exec' commands
+
+# exec_params is an array
+declare -a exec_params
+exec_params=         #         "         'exec'          command
+
+#--------------------------------------------------------------
+# functions
+#--------------------------------------------------------------
+
+function de_cvs() {
+   echo "$1" | cut -d: -f2- | cut -d' ' -f2- | cut -d\$ -f1 | cut -d, -f1
+}
+
+function reset_parameters() {
+   be_verbose=false
+   ignore_error=false
+   interactive=non-interactive
+   prefix_with_hostname=false
+   server_type=
+   server_list=
+   remote_user=
+   command=
+   do_commandline=
+   local_file=
+   remote_file=
+   exec_params=( )
+}
+
+function parse_parameters() {
+   [ "$1" == "--help" ] && usage
+   # parse options
+   while [[ "$1" =~ ^- ]]; do 
+      case "$1" in
+         -v) be_verbose=true;;
+         -i) interactive=interactive;;
+         -f) ignore_error=true;;
+         -p) prefix_with_hostname=true;;
+         *)  usage ;;
+      esac
+      shift
+   done
+   # if "$1" starts with a parenthesis
+   if grep -q '^(' <<<$1; then
+      server_list=$( echo "$1" | sed 's/(// ; s/)//' )
+   else
+      server_type="$1"
+   fi
+   shift
+   if [ "$1" == "as" ]; then
+      shift
+      remote_user="$1"
+      shift
+   fi
+   command=$1
+   shift
+   case "$command" in
+      do)
+         do_commandline="$1" ;;
+      get)
+         remote_file="$1"
+         shift
+         local_file="$1"
+         if [ ! "$local_file" ]; then
+            local_file="$remote_file"
+         fi
+         ;;
+      put)
+         local_file="$1"
+         shift
+         remote_file="$1"
+         if [ ! "$remote_file" ]; then
+            remote_file="$local_file"
+         fi
+         ;;
+      exec)
+         local_file="$1"
+         shift
+         exec_params=( "$@" ) # array copy
+         ;;
+      list)
+         ;;
+      term)
+         ;;
+      *)
+         usage ;;
+   esac
+   # debug_parameters
+}
+
+# prefix output with hostname if so configured
+#
+function prefix_with() {
+   local hostname="$1"
+
+   if [ "$prefix_with_hostname" == "true" ]; then
+      awk '{ print "'${hostname}': " $0 }'
+   else
+      cat
+   fi
+}
+
+# by default aborts if an error happens when doing something on a remote
+# server. If user requests not aborting with -f switch nothing will happen.
+#
+function on_error() {
+   local host="$1"
+   local err_status="$2"
+   local err_status="$2"
+
+   if [ $err_status != 0 -a "$ignore_error" == "false" ]; then
+      echo "Aborting due to error on host ${host} (exit status ${err_status})" >&2
+      exit $err_status
+   fi
+}
+
+# do_remote <server_list> <remote_user>
+#           "non-interactive"|"interactive"
+#           <commandline>
+#
+# execute <commandline> on all servers in <server_list>
+# with user <remote_user>. Open connection in "terminal mode"
+# if the third parameter is set as 'interactive'
+#
+# Ex:
+#
+#    do_remote "mail1 mail2" anonymousCoward non-interactive "cat /etc/shadow"
+#    do_remote "webserver" root interactive "dpkg-reconfigure apache2"
+#
+function do_remote() {
+   local server_list="$1"
+   local remote_user="$2"
+   local interactive="$3"
+   local commandline="$4"
+
+   local login_as=
+   [ $remote_user ] && login_as="${remote_user}@"
+
+   local terminal=
+   [ "$interactive" == "interactive" ] && terminal="-t"
+
+   exec 3>&1 # save original stdout into fd 3
+   exec 4>&2 # save original stderr into fd 4, see [1]
+
+   for server in $server_list; do
+      debug "Executing: ssh ${login_as}${server} \"$commandline\""
+      ssh $terminal ${login_as}${server} "$commandline" \
+          > >( prefix_with $server >&3 )                \
+         2> >( prefix_with $server >&4 )
+      on_error $server $err_stat
+   done
+}
+
+# put_on_remote <server_list> <remote_user> <local_file> <remote_file>
+#
+# copy file <local_file> to file <remote_file> on all servers in
+# <server_list> with user <remote_user>
+#
+# Ex:
+#
+#    put_on_remote "sun" bjoy fuse /tmp/fuse
+#
+function put_on_remote() {
+   local server_list="$1"
+   local remote_user="$2"
+   local local_file="$3"
+   local remote_file="$4"
+
+   local login_as=
+   [ $remote_user ] && login_as="${remote_user}@"
+
+   for server in $server_list; do
+      debug "Executing: scp \"$local_file\" \"${login_as}${server}:${remote_file}\""
+      scp "$local_file" "${login_as}${server}:${remote_file}"
+      on_error $server $?
+   done
+}
+
+# get_from_remote <server_list> <remote_user> <remote_file> <local_file>
+#
+# copy file <remote_file> from all servers in <server_list> with
+# user <remote_user> to file <local_file>_$hostname
+#
+# Ex:
+#
+#    get_from_remote "mil" root /etc/passwd passwd
+#
+function get_from_remote() {
+   local server_list="$1"
+   local remote_user="$2"
+   local local_file="$3"
+   local remote_file="$4"
+
+   local login_as=
+   [ $remote_user ] && login_as="${remote_user}@"
+
+   for server in $server_list; do
+      debug "Executing: scp \"${login_as}${server}:${remote_file}\" \"${local_file}_${server}\""
+      scp "${login_as}${server}:${remote_file}" "${local_file}_${server}"
+      on_error $server $?
+   done
+}
+
+# exec_remote <server_list> <remote_user> \
+#             "non-interactive"|"interactive" \
+#             <local_file> <exec_params>*
+#
+# copy file <local_file> to all servers in <server_list> with user
+# <remote_user> and execute the file there with arguments <exec_params>.
+# Open connection in "terminal mode" if the third parameter is set as
+# 'interactive'
+#
+# Ex:
+#
+#    exec_remote "server1 server2 server3" root interactive \
+#                rcs_all switches as admins do ls
+#
+function exec_remote() {
+   local server_list="$1"
+   shift
+   local remote_user="$1"
+   shift
+   local interactive="$1"
+   shift
+   local local_file="$1"
+   shift
+   # exec_params are in $@ now
+
+   local login_as=
+   [ $remote_user ] && login_as="${remote_user}@"
+
+   local terminal=
+   [ "$interactive" == "interactive" ] && terminal="-t"
+
+   local file_name=$( basename "$local_file" )
+
+   # see: http://ninjaverification.wordpress.com/2008/12/17/wrapping-ssh-inside-a-script-and-passing-arbitrary-commands-to-another-program/
+   for server in $server_list; do
+      debug "At ${login_as}${server} remotely executing \"$dir/$file_name\"" "$@"
+      dir=$( ssh ${login_as}${server} "mktemp -d" )
+      on_error $server $?
+      scp -q "$local_file" "${login_as}${server}:$dir/$file_name"
+      on_error $server $?
+      (
+        ssh $terminal ${login_as}${server} "$dir/$file_name" "$@"
+	err_stat=$?                # exit inside on_error would only
+        on_error $server $err_stat # terminate this subshell, so we
+      ) | prefix_with $server      # need to export $err_stat from it
+      [ "$err_stat" != "0" ] && exit $err_stat
+
+      ssh ${login_as}${server} "rm -r $dir"
+      on_error $server $?
+   done
+}
+
+# call_term <server_list> <remote_user>
+#
+# open a terminal on one after the other on each of the servers in
+# <server_list>
+#
+# Ex:
+#
+#    call_term "server1 server2 server3" as app-admin
+#
+function call_term() {
+   local server_list="$1"
+   local remote_user="$2"
+
+   local login_as=
+   [ $remote_user ] && login_as="${remote_user}@"
+
+   for server in $server_list; do
+      debug "Opening terminal for ${login_as}${server}"
+      (
+        ssh -t ${login_as}${server}
+      ) | prefix_with $server
+   done
+}
+
+#--------------------------------------------------------------
+# functions used for debugging und unit-tests
+#--------------------------------------------------------------
+
+function debug() {
+   [ "$be_verbose" == "true" ] && echo "$@" >&2
+}
+
+function debug_parameters() {
+   echo "be_verbose='$be_verbose'"
+   echo "ignore_error='$ignore_error'"
+   echo "interactive='$interactive'"
+   echo "prefix_with_hostname='$prefix_with_hostname'"
+   echo "server_type='$server_type'"
+   echo "server_list='$server_list'"
+   echo "remote_user='$remote_user'"
+   echo "command='$command'"
+   echo "do_commandline='$do_commandline'"
+   echo "local_file='$local_file'"
+   echo "remote_file='$remote_file'"
+   echo "exec_params='${exec_params[@]}'"
+}
+
+#--------------------------------------------------------------
+# unit tests
+# enable by uncommenting run_unit_tests in main
+#--------------------------------------------------------------
+
+function run_unit_tests() {
+   set -e
+   for t in test_parse_parameters_do \
+            test_parse_parameters_put \
+            test_parse_parameters_get \
+            test_parse_parameters_exec \
+            test_parse_parameters_singleserver \
+            test_parse_parameters_serverlist \
+            test_parse_parameters_term; do
+      echo -n "running test $t : "
+      eval $t
+      echo successfull
+   done
+   exit 0
+}
+
+# Generic command lines looks like these:
+#
+#    rcs_all <serverType> [as <remote_user>] do   <"some; commands and -options">
+#    rcs_all <serverType> [as <remote_user>] get  </remote/file> [</local/file>]
+#    rcs_all <serverType> [as <remote_user>] put  </local/file>  [</remote/file>]
+#    rcs_all <serverType> [as <remote_user>] exec </local/file>  [<"some args">]*
+#    rcs_all <serverType> [as <remote_user>] term
+#    rcs_all <serverType>                    list
+#
+function test_parse_parameters_do() {
+   # test 1: rcs_all windöz as Administrator do "deltree c:\"
+   reset_parameters
+   parse_parameters -p windöz as Administrator 'do' 'deltree c:\'
+   local res=$( debug_parameters )
+   local corr=$( cat<<-EOC
+		be_verbose='false'
+		ignore_error='false'
+		interactive='non-interactive'
+		prefix_with_hostname='true'
+		server_type='windöz'
+		server_list=''
+		remote_user='Administrator'
+		command='do'
+		do_commandline='deltree c:\'
+		local_file=''
+		remote_file=''
+		exec_params=''
+		EOC
+              )
+   [ "$res" == "$corr" ]
+}
+
+function test_parse_parameters_put() {
+   # test 2: rcs_all -v gagamachines put faighl1 /paat/faighl2
+   reset_parameters
+   parse_parameters -v -p gagamachines put faighl1 /paat/faighl2
+   res=$( debug_parameters )
+   corr=$(cat<<-EOC
+		be_verbose='true'
+		ignore_error='false'
+		interactive='non-interactive'
+		prefix_with_hostname='true'
+		server_type='gagamachines'
+		server_list=''
+		remote_user=''
+		command='put'
+		do_commandline=''
+		local_file='faighl1'
+		remote_file='/paat/faighl2'
+		exec_params=''
+		EOC
+              )
+  [ "$res" == "$corr" ]
+}
+
+function test_parse_parameters_get() {
+   # test 2: rcs_all -v gagamachines get faighl1
+   reset_parameters
+   parse_parameters -v -p gagamachines get faighl1
+   res=$( debug_parameters )
+   corr=$(cat<<-EOC
+		be_verbose='true'
+		ignore_error='false'
+		interactive='non-interactive'
+		prefix_with_hostname='true'
+		server_type='gagamachines'
+		server_list=''
+		remote_user=''
+		command='get'
+		do_commandline=''
+		local_file='faighl1'
+		remote_file='faighl1'
+		exec_params=''
+		EOC
+              )
+  [ "$res" == "$corr" ]
+}
+
+function test_parse_parameters_exec() {
+   # test 3: rcs_all -f zOS exec install_debian --force --really-force
+   reset_parameters
+   parse_parameters -f zOS exec install_debian --force --really-force
+   res=$( debug_parameters )
+   corr=$(cat<<-EOC
+		be_verbose='false'
+		ignore_error='true'
+		interactive='non-interactive'
+		prefix_with_hostname='false'
+		server_type='zOS'
+		server_list=''
+		remote_user=''
+		command='exec'
+		do_commandline=''
+		local_file='install_debian'
+		remote_file=''
+		exec_params='--force --really-force'
+		EOC
+              )
+  [ "$res" == "$corr" ]
+}
+
+function test_parse_parameters_singleserver() {
+   # test 4: rcs_all -i "(mylaptop)" exec install_debian --force --really-force
+   reset_parameters
+   parse_parameters -i "(mylaptop)" exec install_debian --force --really-force
+   res=$( debug_parameters )
+   corr=$(cat<<-EOC
+		be_verbose='false'
+		ignore_error='false'
+		interactive='interactive'
+		prefix_with_hostname='false'
+		server_type=''
+		server_list='mylaptop'
+		remote_user=''
+		command='exec'
+		do_commandline=''
+		local_file='install_debian'
+		remote_file=''
+		exec_params='--force --really-force'
+		EOC
+              )
+  [ "$res" == "$corr" ]
+}
+
+function test_parse_parameters_serverlist() {
+   # test 5: rcs_all -f -i "(mylaptop myserver)" exec install_debian --force --really-force
+   reset_parameters
+   parse_parameters -f -i "(mylaptop myserver)" exec install_debian --force --really-force
+   res=$( debug_parameters )
+   corr=$(cat<<-EOC
+		be_verbose='false'
+		ignore_error='true'
+		interactive='interactive'
+		prefix_with_hostname='false'
+		server_type=''
+		server_list='mylaptop myserver'
+		remote_user=''
+		command='exec'
+		do_commandline=''
+		local_file='install_debian'
+		remote_file=''
+		exec_params='--force --really-force'
+		EOC
+              )
+  [ "$res" == "$corr" ]
+}
+
+function test_parse_parameters_term() {
+   # test 6: rcs_all GoogleServers as elite term
+   reset_parameters
+   parse_parameters GoogleServers as elite term
+   res=$( debug_parameters )
+   corr=$(cat<<-EOC
+		be_verbose='false'
+		ignore_error='false'
+		interactive='non-interactive'
+		prefix_with_hostname='false'
+		server_type='GoogleServers'
+		server_list=''
+		remote_user='elite'
+		command='term'
+		do_commandline=''
+		local_file=''
+		remote_file=''
+		exec_params=''
+		EOC
+              )
+  [ "$res" == "$corr" ]
+}
+
+#--------------------------------------------------------------
+# main
+#--------------------------------------------------------------
+
+# run_unit_tests # uncomment to run them
+
+reset_parameters
+parse_parameters "$@"
+if [ "$server_type" ]; then
+   server_list=$( find_hosts "$server_type" )
+fi
+case "$command" in
+   do)   do_remote       "$server_list" "$remote_user" $interactive "$do_commandline" ;;
+   get)  get_from_remote "$server_list" "$remote_user"              "$remote_file" "$local_file" ;;
+   put)  put_on_remote   "$server_list" "$remote_user"              "$local_file"  "$remote_file" ;;
+   exec) exec_remote     "$server_list" "$remote_user" $interactive "$local_file"  "${exec_params[@]}";;
+   list) echo            "$server_list" ;;
+   term) call_term       "$server_list" "$remote_user";;
+   *)    usage ;;
+esac
