@@ -116,7 +116,7 @@ EOH
 # -------------------------------------------------------------------------
 
 # todo?
-. /opt/source/delivery/rcs_common/lib/common_functions.sh
+#. /opt/source/delivery/rcs_common/lib/common_functions.sh
 
 #--------------------------------------------------------------
 # comman line parameters
