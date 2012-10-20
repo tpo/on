@@ -111,13 +111,6 @@ EOH
 #     http://tldp.org/LDP/abs/html/ioredirintro.html
 #     http://www.zsh.org/mla/users/2003/msg00941.html
 
-# -------------------------------------------------------------------------
-# includes
-# -------------------------------------------------------------------------
-
-# todo?
-#. /opt/source/delivery/rcs_common/lib/common_functions.sh
-
 #--------------------------------------------------------------
 # comman line parameters
 # global variables that are set once only in the parse_parameters
