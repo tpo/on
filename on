@@ -1,9 +1,7 @@
 #!/bin/bash
 ## -------------------------------------------------------------------------
-# Autor:    tpospise
-# Datum:    $Date: 2009/10/28 15:15:24 $
-# Name:     $Source: /opt/repository/cvs/integration/rcs_common/bin/rcs_all,v $
-# Revision: $Revision: 1.9 $
+# Autor:    Tomas Pospisek
+# Revision 1.9 went into git
 # -------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
@@ -11,9 +9,6 @@
 # -------------------------------------------------------------------------
 
 function usage() {
-    local rev=$( de_cvs "$Revision: 1.9 $" )
-    local date=$( de_cvs "$Date: 2009/10/28 15:15:24 $" )
-    local src=$( de_cvs "$Source: /opt/repository/cvs/integration/rcs_common/bin/rcs_all,v $" )
    cat<<EOH
 usage:
   on <options> <serverType>|<(server list)> [as <remote_user>] command
@@ -87,8 +82,6 @@ usage:
     rcs_all is only really usefull if you distribute your ssh key to the
     target servers.
 
-    $src
-    ${rev}on ${date}
     Tomas Pospisek <tpo_deb@sourcepole.ch>
 
 EOH
@@ -134,10 +127,6 @@ exec_params=         #         "         'exec'          command
 #--------------------------------------------------------------
 # functions
 #--------------------------------------------------------------
-
-function de_cvs() {
-   echo "$1" | cut -d: -f2- | cut -d' ' -f2- | cut -d\$ -f1 | cut -d, -f1
-}
 
 function reset_parameters() {
    be_verbose=false
