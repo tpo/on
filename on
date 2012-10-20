@@ -616,6 +616,9 @@ function test_parse_parameters_term() {
 
 # run_unit_tests # uncomment to run them
 
+# include on configuration and settings
+. ~/.on.config
+
 reset_parameters
 parse_parameters "$@"
 if [ "$server_type" ]; then
