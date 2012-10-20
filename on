@@ -238,9 +238,8 @@ function prefix_with() {
 function on_error() {
    local host="$1"
    local err_status="$2"
-   local err_status="$2"
 
-   if [ $err_status != 0 -a "$ignore_error" == "false" ]; then
+   if [ "$err_status" -ne "0" -a "$ignore_error" = "false" ]; then
       echo "Aborting due to error on host ${host} (exit status ${err_status})" >&2
       exit $err_status
    fi
@@ -279,7 +278,8 @@ function do_remote() {
       ssh $terminal ${login_as}${server} "$commandline" \
           > >( prefix_with $server >&3 )                \
          2> >( prefix_with $server >&4 )
-      on_error $server $err_stat
+      # todo $? was $err_state before?
+      on_error $server $?
    done
 }
 
