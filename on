@@ -16,19 +16,23 @@ function usage() {
     local src=$( de_cvs "$Source: /opt/repository/cvs/integration/rcs_common/bin/rcs_all,v $" )
    cat<<EOH
 usage:
-  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] do <"some; commands and -options">
-  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] get </remote/file> [</local/file>]
-  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] put </local/file> [</remote/file>]
-  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] exec </local/file> [<"some args">]*
-  rcs_all [<options>]* <serverType>|<(server list)> [as <remote_user>] term
-  rcs_all              <serverType>|<(server list)>                    list
+  on <options> <serverType>|<(server list)> [as <remote_user>] command
+  
+  commands:  
+    do    <"some; commands and -options">
+    get   </remote/file> [</local/file>]
+    put   </local/file> [</remote/file>]
+    exec  </local/file> [<"some args">]*
+    term
 
-    rcs_all does "stuff" on a group of servers that is
+  on <serverType>|<(server list)> list
+
+    on does "command" on a group of servers that is
     either of type serverType or named in the <(server list)>.
 
-    "stuff" is allways done sequentially, one after the other has completed.
+    "command" is allways done sequentially, one after the other has completed.
 
-    The "stuff" that rcs_all does can be:
+    The "command" that on knows:
 
         do    will execute the commands and parameters passed to the
               command as last parameter on the remote machines
@@ -85,7 +89,7 @@ usage:
 
     $src
     ${rev}on ${date}
-    Tomas.Pospisek@t-systems.ch (#4279) aka tpo_hp@sourcepole.ch
+    Tomas Pospisek <tpo_deb@sourcepole.ch>
 
 EOH
    exit 1
