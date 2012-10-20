@@ -28,10 +28,10 @@ DESCRIPTION
     "(server list)".
    
     "(server list)" is a list of host names separated by spaces and
-    enclosed in parenthesis, such as "(192.168.1.2 webserver mail)".
+    enclosed in parenthesis, such as "(192.168.1.2 webserver mail)"
+    or "(router1)" for a single host.
 
-    To do something on a single machine pass a list of one machine:
-    "(router1)"
+    See CONFIGURATION below for server_group.
 
     The command is allways executed sequentially, one server after the other.
 
@@ -70,18 +70,31 @@ COMMANDS
     term  will open a terminal (shell) on each remote machine
 
 OPTIONS
-        -v be verbose on what on is doing (on which servers!)
+    -v be verbose on what on is doing (on which servers!)
 
-        -i interactive - stdin from the terminal will be forwarded to the
-           remote session. Only available with the "exec" and "do" commands.
+    -i interactive - stdin from the terminal will be forwarded to the
+       remote session. Only available with the "exec" and "do" commands.
 
-        -f (as in force) ignore errors when executing the "do", "get", "put"
-           or "exec" commands. Just continue on the next server. Default is to
-           abort on error.
+    -f (as in force) ignore errors when executing the "do", "get", "put"
+       or "exec" commands. Just continue on the next server. Default is to
+       abort on error.
 
-        -p prefix all output with hostname. Default is to display the output
-           (stdout) unchanged. This option does not apply to the "get" and
-           "put" commands.
+    -p prefix all output with hostname. Default is to display the output
+       (stdout) unchanged. This option does not apply to the "get" and
+       "put" commands.
+
+CONFIGURATION
+    on will source ~/.on.config on startup. There you can define variables
+    that define server groups. If your f.ex have a ~/.on.config that contains:
+
+        my_servers="server1 server2"
+
+    then you can call on like this:
+
+	on my_servers do ls
+
+    Since ~/.on.config is being sourced, you use bash scripting there at will
+    f.ex. to define groups of groups etc.
 
 AUTHOR
     Tomas Pospisek <tpo_deb@sourcepole.ch>
