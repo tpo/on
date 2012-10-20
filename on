@@ -438,10 +438,11 @@ function find_hosts() {
    # if the user defines a variable with a name
    # that corresponds to the parameter given,
    # then return that evale'd variable
-   if [ ! "$1" ]; then
+   local server_list=$( eval echo \$$1 )
+   if [ ! "$server_list" ]; then
      echo "no machine group $1 has been defined" >&2
    fi
-   echo "$1"
+   echo "$server_list"
 }
 
 #--------------------------------------------------------------
