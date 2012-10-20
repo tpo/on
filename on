@@ -64,7 +64,7 @@ usage:
 
     <options> can be:
 
-        -v be verbose on what rcs_all is doing (on which servers!)
+        -v be verbose on what on is doing (on which servers!)
 
         -i interactive - stdin from the terminal will be forwarded to the
            remote session. Only available with the "exec" and "do" commands.
@@ -79,7 +79,7 @@ usage:
 
     <remote_user> is not allowed to contain any metacharacters such as spaces
 
-    rcs_all is only really usefull if you distribute your ssh key to the
+    on is only really usefull if you distribute your ssh key to the
     target servers.
 
     Tomas Pospisek <tpo_deb@sourcepole.ch>
@@ -329,7 +329,7 @@ function get_from_remote() {
 # Ex:
 #
 #    exec_remote "server1 server2 server3" root interactive \
-#                rcs_all switches as admins do ls
+#                on switches as admins do ls
 #
 function exec_remote() {
    local server_list="$1"
@@ -439,15 +439,15 @@ function run_unit_tests() {
 
 # Generic command lines looks like these:
 #
-#    rcs_all <serverType> [as <remote_user>] do   <"some; commands and -options">
-#    rcs_all <serverType> [as <remote_user>] get  </remote/file> [</local/file>]
-#    rcs_all <serverType> [as <remote_user>] put  </local/file>  [</remote/file>]
-#    rcs_all <serverType> [as <remote_user>] exec </local/file>  [<"some args">]*
-#    rcs_all <serverType> [as <remote_user>] term
-#    rcs_all <serverType>                    list
+#    on <serverType> [as <remote_user>] do   <"some; commands and -options">
+#    on <serverType> [as <remote_user>] get  </remote/file> [</local/file>]
+#    on <serverType> [as <remote_user>] put  </local/file>  [</remote/file>]
+#    on <serverType> [as <remote_user>] exec </local/file>  [<"some args">]*
+#    on <serverType> [as <remote_user>] term
+#    on <serverType>                    list
 #
 function test_parse_parameters_do() {
-   # test 1: rcs_all windöz as Administrator do "deltree c:\"
+   # test 1: on windöz as Administrator do "deltree c:\"
    reset_parameters
    parse_parameters -p windöz as Administrator 'do' 'deltree c:\'
    local res=$( debug_parameters )
@@ -470,7 +470,7 @@ function test_parse_parameters_do() {
 }
 
 function test_parse_parameters_put() {
-   # test 2: rcs_all -v gagamachines put faighl1 /paat/faighl2
+   # test 2: on -v gagamachines put faighl1 /paat/faighl2
    reset_parameters
    parse_parameters -v -p gagamachines put faighl1 /paat/faighl2
    res=$( debug_parameters )
@@ -493,7 +493,7 @@ function test_parse_parameters_put() {
 }
 
 function test_parse_parameters_get() {
-   # test 2: rcs_all -v gagamachines get faighl1
+   # test 2: on -v gagamachines get faighl1
    reset_parameters
    parse_parameters -v -p gagamachines get faighl1
    res=$( debug_parameters )
@@ -516,7 +516,7 @@ function test_parse_parameters_get() {
 }
 
 function test_parse_parameters_exec() {
-   # test 3: rcs_all -f zOS exec install_debian --force --really-force
+   # test 3: on -f zOS exec install_debian --force --really-force
    reset_parameters
    parse_parameters -f zOS exec install_debian --force --really-force
    res=$( debug_parameters )
@@ -539,7 +539,7 @@ function test_parse_parameters_exec() {
 }
 
 function test_parse_parameters_singleserver() {
-   # test 4: rcs_all -i "(mylaptop)" exec install_debian --force --really-force
+   # test 4: on -i "(mylaptop)" exec install_debian --force --really-force
    reset_parameters
    parse_parameters -i "(mylaptop)" exec install_debian --force --really-force
    res=$( debug_parameters )
@@ -562,7 +562,7 @@ function test_parse_parameters_singleserver() {
 }
 
 function test_parse_parameters_serverlist() {
-   # test 5: rcs_all -f -i "(mylaptop myserver)" exec install_debian --force --really-force
+   # test 5: on -f -i "(mylaptop myserver)" exec install_debian --force --really-force
    reset_parameters
    parse_parameters -f -i "(mylaptop myserver)" exec install_debian --force --really-force
    res=$( debug_parameters )
@@ -585,7 +585,7 @@ function test_parse_parameters_serverlist() {
 }
 
 function test_parse_parameters_term() {
-   # test 6: rcs_all GoogleServers as elite term
+   # test 6: on GoogleServers as elite term
    reset_parameters
    parse_parameters GoogleServers as elite term
    res=$( debug_parameters )
