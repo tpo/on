@@ -5,28 +5,28 @@ A few examples what you can do with 'on'
      14:57:17 up 12 days,  2:00,  2 users,  load average: 1.47, 1.62, 1.66
      14:57:21 up 5 days, 23:30,  0 users,  load average: 0.25, 0.20, 0.15
 
-
+ 
     $ cat ~/.on.config
     servers="mail www"
     $ on -p servers do "uname -a"
     mail: Linux
     www: Linux
 
-
+ 
     $ echo "some file with some content" > /tmp/foo
     $ on servers nfs put /tmp/foo
     foo                                          100%   28     0.0KB/s   00:00    
     foo                                          100%   28     0.0KB/s   00:00
     foo                                          100%   28     0.0KB/s   00:00
 
-
+ 
     $ on servers get /etc/debian_release /tmp/debian_release
     debian_version                               100%   11     0.0KB/s   00:00    
     debian_version                               100%   11     0.0KB/s   00:00    
     $ ls /tmp/debian_release*
     /tmp/debian_release_mail /tmp/debian_release_www
 
-
+ 
     $ cat /tmp/script
     #!/bin/sh
     echo "`hostname` says hello"
@@ -34,7 +34,7 @@ A few examples what you can do with 'on'
     mail says hello
     www says hello
 
-
+ 
     $ on --help
     SYNOPSIS
       on [options] host_list [as remote_user] command
