@@ -597,7 +597,7 @@ function test_parse_parameters_exec() {
 }
 
 function test_parse_parameters_singlehost() {
-   # test 4: on -i "(mylaptop)" exec install_debian --force --really-force
+   # test 4: on -i mylaptop exec install_debian --force --really-force
    reset_parameters
    parse_parameters -i mylaptop exec install_debian --force --really-force
    res=$( debug_parameters )
@@ -619,9 +619,9 @@ function test_parse_parameters_singlehost() {
 }
 
 function test_parse_parameters_hostlist() {
-   # test 5: on -f -i "(mylaptop myserver)" exec install_debian --force --really-force
+   # test 5: on -f -i mylaptop myserver exec install_debian --force --really-force
    reset_parameters
-   parse_parameters -f -i "(mylaptop myserver)" exec install_debian --force --really-force
+   parse_parameters -f -i mylaptop myserver exec install_debian --force --really-force
    res=$( debug_parameters )
    corr=$(cat<<-EOC
 		be_verbose='false'
