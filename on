@@ -17,10 +17,10 @@ SYNOPSIS
   on           host_list                  list
   
   COMMANDS
-    do    <"some; commands and -options">
-    get   </remote/file> [</local/file>]
-    put   </local/file> [</remote/file>]
-    exec  </local/file> [<"some args">]*
+    do    "some; commands and -options"
+    get   /remote/file [/local/file]
+    put   /local/file [/remote/file]
+    exec  /local/file ["some args"]*
     term
     list
 
@@ -48,21 +48,21 @@ COMMANDS
     do    will execute the commands and parameters passed to the
           command as last parameter on the remote machines
 
-    get   will copy the <remote/file> from the given remote machines
-          onto the local machine. If <local/file> is not given, then
+    get   will copy the /remote/file from the given remote machines
+          onto the local machine. If /local/file is not given, then
           the file will be copied to the same path as the remote file is.
 
-          Relative <remote/file> paths will be copied to relative paths
+          Relative remote/file paths will be copied to relative paths
           *starting from the current working directory*, same as scp would.
 
           The files will be given a postfix consisting of the name of the
           host the were fetched from.
 
-    put   will copy the <local/file> to given remote machines. If
-          <remote/file> is not given, then the file will be copied to
-          the same path as <local/file>. Since we're using scp to do
-          the copying, giving a <local/file> with a relative path and
-          omitting the <remote/file> the file will be put into the
+    put   will copy the /local/file to given remote machines. If
+          /remote/file is not given, then the file will be copied to
+          the same path as /local/file. Since we're using scp to do
+          the copying, giving a /local/file with a relative path and
+          omitting the /remote/file the file will be put into the
           relative path starting from the HOME directory!
 
     exec  will execute the given local file with the arguments that
@@ -262,12 +262,12 @@ function on_error() {
    fi
 }
 
-# do_remote <host_list> <remote_user>
+# do_remote host_list remote_user
 #           "non-interactive"|"interactive"
-#           <commandline>
+#           commandline
 #
-# execute <commandline> on all hosts in <host_list>
-# with user <remote_user>. Open connection in "terminal mode"
+# execute commandline on all hosts in host_list
+# with user remote_user. Open connection in "terminal mode"
 # if the third parameter is set as 'interactive'
 #
 # Ex:
@@ -300,10 +300,10 @@ function do_remote() {
    done
 }
 
-# put_on_remote <host_list> <remote_user> <local_file> <remote_file>
+# put_on_remote host_list remote_user local_file remote_file
 #
-# copy file <local_file> to file <remote_file> on all hosts in
-# <host_list> with user <remote_user>
+# copy local_file to remote_file on all hosts in
+# host_list with user remote_user
 #
 # Ex:
 #
@@ -325,10 +325,10 @@ function put_on_remote() {
    done
 }
 
-# get_from_remote <host_list> <remote_user> <remote_file> <local_file>
+# get_from_remote host_list remote_user remote_file local_file
 #
-# copy file <remote_file> from all hosts in <host_list> with
-# user <remote_user> to file <local_file>_$hostname
+# copy remote_file from all hosts in host_list with
+# remote_user to local_file_$hostname
 #
 # Ex:
 #
@@ -350,18 +350,18 @@ function get_from_remote() {
    done
 }
 
-# exec_remote <host_list> <remote_user> \
-#             "non-interactive"|"interactive" \
-#             <local_file> <exec_params>*
+# exec_remote host_list remote_user            \
+#             "non-interactive"|"interactive"  \
+#             local_file exec_params*
 #
-# copy file <local_file> to all hosts in <host_list> with user
-# <remote_user> and execute the file there with arguments <exec_params>.
+# copy local_file to all hosts in host_list with user
+# remote_user and execute the file there with arguments exec_params.
 # Open connection in "terminal mode" if the third parameter is set as
 # 'interactive'
 #
 # Ex:
 #
-#    exec_remote "server1 server2 server3" root interactive \
+#    exec_remote "server1 server2 server3" root interactive  \
 #                on switches as admins do ls
 #
 function exec_remote() {
@@ -402,10 +402,10 @@ function exec_remote() {
    done
 }
 
-# call_term <host_list> <remote_user>
+# call_term host_list remote_user
 #
-# open a terminal on one after the other on each of the hosts in
-# <host_list>
+# open a terminal on one host after the other on each of the hosts in
+# host_list
 #
 # Ex:
 #
@@ -501,12 +501,12 @@ function run_unit_tests() {
 
 # Generic command lines looks like these:
 #
-#    on host_list [as <remote_user>] do   <"some; commands and -options">
-#    on host_list [as <remote_user>] get  </remote/file> [</local/file>]
-#    on host_list [as <remote_user>] put  </local/file>  [</remote/file>]
-#    on host_list [as <remote_user>] exec </local/file>  [<"some args">]*
-#    on host_list [as <remote_user>] term
-#    on host_list                    list
+#    on host_list [as remote_user] do   "some; commands and -options"
+#    on host_list [as remote_user] get  /remote/file [/local/file]
+#    on host_list [as remote_user] put  /local/file  [/remote/file]
+#    on host_list [as remote_user] exec /local/file  ["some args"]*
+#    on host_list [as remote_user] term
+#    on host_list                  list
 #
 function test_parse_parameters_do() {
    # test 1: on windöz as Administrator do "deltree c:\"
