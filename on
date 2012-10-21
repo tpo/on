@@ -30,8 +30,8 @@ DESCRIPTION
     "(server list)".
    
     server_list is a list of host names separated by spaces and enclosed
-    in parenthesis. A server_list can also contain server_groups. See
-    CONFIGURATION below for server_group.
+    in parenthesis. A server_list can also contain server_groups which will
+    be unaliased first. See CONFIGURATION below for server_group.
    
     The hosts can not be named "as", "do", "get", "put", "exec", "term",
     "list". In case you use such names you need to alias them through
@@ -99,6 +99,9 @@ CONFIGURATION
 
     Since ~/.on.config is being sourced, you use bash scripting there at will
     f.ex. to define groups of groups etc.
+
+    Note that the my_servers declatation will override a possibly existing
+    host with the strange name "my_servers".
 
 ENVIRONMENT
     Setting DEBUG will execute on with the -x bash flag set.
