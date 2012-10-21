@@ -8,6 +8,8 @@
 # usage
 # -------------------------------------------------------------------------
 
+[ "$DEBUG" ] && set -x
+
 function usage() {
    cat<<EOH
 SYNOPSIS
@@ -95,6 +97,9 @@ CONFIGURATION
 
     Since ~/.on.config is being sourced, you use bash scripting there at will
     f.ex. to define groups of groups etc.
+
+ENVIRONMENT
+    Setting DEBUG will execute on with the -x bash flag set.
 
 AUTHOR
     Tomas Pospisek <tpo_deb@sourcepole.ch>
