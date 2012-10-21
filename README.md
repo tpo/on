@@ -18,14 +18,14 @@ A few examples what you can do with 'on'
     foo                                          100%   28     0.0KB/s   00:00    
     foo                                          100%   28     0.0KB/s   00:00
     foo                                          100%   28     0.0KB/s   00:00
-    
+
 
     $ on servers get /etc/debian_release /tmp/debian_release
     debian_version                               100%   11     0.0KB/s   00:00    
     debian_version                               100%   11     0.0KB/s   00:00    
     $ ls /tmp/debian_release*
     /tmp/debian_release_mail /tmp/debian_release_www
-    
+
 
     $ cat /tmp/script
     #!/bin/sh
