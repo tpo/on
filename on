@@ -13,7 +13,7 @@
 function usage() {
    cat<<EOH
 SYNOPSIS
-  on [options] server_group|"(server list)" [as remote_user] command
+  on [options] server_list [as remote_user] command
   on server_group|"server list" list
   
   COMMANDS
@@ -29,11 +29,13 @@ DESCRIPTION
     on executes "command" on one or more hosts defined by server_group or
     "(server list)".
    
-    "(server list)" is a list of host names separated by spaces and
-    enclosed in parenthesis, such as "(192.168.1.2 webserver mail)"
-    or "(router1)" for a single host.
-
-    See CONFIGURATION below for server_group.
+    server_list is a list of host names separated by spaces and enclosed
+    in parenthesis. A server_list can also contain server_groups. See
+    CONFIGURATION below for server_group.
+   
+    The hosts can not be named "as", "do", "get", "put", "exec", "term",
+    "list". In case you use such names you need to alias them through
+    a server_group.
 
     The command is allways executed sequentially, one server after the other.
 
@@ -126,8 +128,7 @@ be_verbose=
 ignore_error=
 interactive=
 prefix_with_hostname=
-server_type=         # only one of these two
-server_list=         # can be set simultaneously
+server_list=
 remote_user=
 command=
 do_commandline=      # only set with the 'do'                    command
@@ -142,12 +143,24 @@ exec_params=         #         "         'exec'          command
 # functions
 #--------------------------------------------------------------
 
+# add_to_list "a" "b" -> "a b"
+# add_to_list ""  "b" -> "b"
+# add_to_list "a" "b" -> "a b"
+# add_to_list ""  ""  -> ""
+#
+function add_to_list() {
+   if [ "$1" = "" -o "$2" = "" ]; then
+      echo "$1$2"
+   else
+      echo "$1 $2"
+   fi
+}
+
 function reset_parameters() {
    be_verbose=false
    ignore_error=false
    interactive=non-interactive
    prefix_with_hostname=false
-   server_type=
    server_list=
    remote_user=
    command=
@@ -170,13 +183,16 @@ function parse_parameters() {
       esac
       shift
    done
-   # if "$1" starts with a parenthesis
-   if grep -q '^(' <<<$1; then
-      server_list=$( echo "$1" | sed 's/(// ; s/)//' )
-   else
-      server_type="$1"
-   fi
-   shift
+   # read host names
+   while true; do 
+      case "$1" in
+         as|as|do|get|put|exec|term|list)
+            break
+            ;;
+      esac
+      server_list=$( add_to_list "$server_list" "$1" )
+      shift
+   done
    if [ "$1" == "as" ]; then
       shift
       remote_user="$1"
@@ -420,7 +436,6 @@ function debug_parameters() {
    echo "ignore_error='$ignore_error'"
    echo "interactive='$interactive'"
    echo "prefix_with_hostname='$prefix_with_hostname'"
-   echo "server_type='$server_type'"
    echo "server_list='$server_list'"
    echo "remote_user='$remote_user'"
    echo "command='$command'"
@@ -430,17 +445,27 @@ function debug_parameters() {
    echo "exec_params='${exec_params[@]}'"
 }
 
-# this was originally in
-# /opt/source/delivery/rcs_common/lib/common_functions.sh
 function find_hosts() {
-   # if the user defines a variable with a name
-   # that corresponds to the parameter given,
-   # then return that evale'd variable
-   local server_list=$( eval echo \$$1 )
-   if [ ! "$server_list" ]; then
-     echo "no machine group $1 has been defined" >&2
-   fi
-   echo "$server_list"
+   local in_server_list="$1"
+   local out_server_list
+   local host
+
+   while [ "$in_server_list" != "" ]; do
+      host=$(           echo "$in_server_list" | cut -d" " -f 1    )
+      in_server_list=$( echo "$in_server_list" | cut -d" " -f 2- -s)
+
+      # if the user defines a variable with a name
+      # that corresponds to the parameter given,
+      # then return that evale'd variable
+      local aliased_hosts=$( eval echo -n \$$host )
+      if [ "$aliased_hosts" = "" ]; then
+         out_server_list=$( add_to_list "$out_server_list" "$host" )
+      else
+         out_server_list=$( add_to_list "$out_server_list" "$aliased_hosts" )
+      fi
+   done
+
+   echo "$out_server_list"
 }
 
 #--------------------------------------------------------------
@@ -466,12 +491,12 @@ function run_unit_tests() {
 
 # Generic command lines looks like these:
 #
-#    on <serverType> [as <remote_user>] do   <"some; commands and -options">
-#    on <serverType> [as <remote_user>] get  </remote/file> [</local/file>]
-#    on <serverType> [as <remote_user>] put  </local/file>  [</remote/file>]
-#    on <serverType> [as <remote_user>] exec </local/file>  [<"some args">]*
-#    on <serverType> [as <remote_user>] term
-#    on <serverType>                    list
+#    on server_list [as <remote_user>] do   <"some; commands and -options">
+#    on server_list [as <remote_user>] get  </remote/file> [</local/file>]
+#    on server_list [as <remote_user>] put  </local/file>  [</remote/file>]
+#    on server_list [as <remote_user>] exec </local/file>  [<"some args">]*
+#    on server_list [as <remote_user>] term
+#    on server_list                    list
 #
 function test_parse_parameters_do() {
    # test 1: on windöz as Administrator do "deltree c:\"
@@ -483,8 +508,7 @@ function test_parse_parameters_do() {
 		ignore_error='false'
 		interactive='non-interactive'
 		prefix_with_hostname='true'
-		server_type='windöz'
-		server_list=''
+		server_list='windöz'
 		remote_user='Administrator'
 		command='do'
 		do_commandline='deltree c:\'
@@ -506,8 +530,7 @@ function test_parse_parameters_put() {
 		ignore_error='false'
 		interactive='non-interactive'
 		prefix_with_hostname='true'
-		server_type='gagamachines'
-		server_list=''
+		server_list='gagamachines'
 		remote_user=''
 		command='put'
 		do_commandline=''
@@ -529,8 +552,7 @@ function test_parse_parameters_get() {
 		ignore_error='false'
 		interactive='non-interactive'
 		prefix_with_hostname='true'
-		server_type='gagamachines'
-		server_list=''
+		server_list='gagamachines'
 		remote_user=''
 		command='get'
 		do_commandline=''
@@ -552,8 +574,7 @@ function test_parse_parameters_exec() {
 		ignore_error='true'
 		interactive='non-interactive'
 		prefix_with_hostname='false'
-		server_type='zOS'
-		server_list=''
+		server_list='zOS'
 		remote_user=''
 		command='exec'
 		do_commandline=''
@@ -568,14 +589,13 @@ function test_parse_parameters_exec() {
 function test_parse_parameters_singleserver() {
    # test 4: on -i "(mylaptop)" exec install_debian --force --really-force
    reset_parameters
-   parse_parameters -i "(mylaptop)" exec install_debian --force --really-force
+   parse_parameters -i mylaptop exec install_debian --force --really-force
    res=$( debug_parameters )
    corr=$(cat<<-EOC
 		be_verbose='false'
 		ignore_error='false'
 		interactive='interactive'
 		prefix_with_hostname='false'
-		server_type=''
 		server_list='mylaptop'
 		remote_user=''
 		command='exec'
@@ -598,7 +618,6 @@ function test_parse_parameters_serverlist() {
 		ignore_error='true'
 		interactive='interactive'
 		prefix_with_hostname='false'
-		server_type=''
 		server_list='mylaptop myserver'
 		remote_user=''
 		command='exec'
@@ -621,8 +640,7 @@ function test_parse_parameters_term() {
 		ignore_error='false'
 		interactive='non-interactive'
 		prefix_with_hostname='false'
-		server_type='GoogleServers'
-		server_list=''
+		server_list='GoogleServers'
 		remote_user='elite'
 		command='term'
 		do_commandline=''
@@ -645,9 +663,8 @@ function test_parse_parameters_term() {
 
 reset_parameters
 parse_parameters "$@"
-if [ "$server_type" ]; then
-   server_list=$( find_hosts "$server_type" )
-fi
+# resolve server_groups
+server_list=$( find_hosts "$server_list" )
 case "$command" in
    do)   do_remote       "$server_list" "$remote_user" $interactive "$do_commandline" ;;
    get)  get_from_remote "$server_list" "$remote_user"              "$remote_file" "$local_file" ;;
