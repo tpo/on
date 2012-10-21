@@ -337,8 +337,8 @@ function put_on_remote() {
 function get_from_remote() {
    local host_list="$1"
    local remote_user="$2"
-   local local_file="$3"
-   local remote_file="$4"
+   local remote_file="$3"
+   local local_file="$4"
 
    local login_as=
    [ $remote_user ] && login_as="${remote_user}@"
