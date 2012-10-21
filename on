@@ -460,7 +460,14 @@ function find_hosts() {
       # if the user defines a variable with a name
       # that corresponds to the parameter given,
       # then return that evale'd variable
-      local aliased_hosts=$( eval echo -n \$$host )
+      local aliased_hosts
+      # if host contains a '-' then that can't be a valid bash
+      # variable aka a host_group and thus it's a host
+      if [[ "$host" =~ - ]]; then
+         aliased_hosts=''
+      else
+         aliased_hosts=$( eval echo -n \$$host )
+      fi
       if [ "$aliased_hosts" = "" ]; then
          out_host_list=$( add_to_list "$out_host_list" "$host" )
       else
