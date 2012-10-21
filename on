@@ -385,7 +385,7 @@ function exec_remote() {
 
    # see: http://ninjaverification.wordpress.com/2008/12/17/wrapping-ssh-inside-a-script-and-passing-arbitrary-commands-to-another-program/
    for host in $host_list; do
-      debug "At ${login_as}${host} remotely executing \"$dir/$file_name\"" "$@"
+      debug "On ${login_as}${host} remotely executing \"$dir/$file_name\"" "$@"
       dir=$( ssh ${login_as}${host} "mktemp -d" )
       on_error $host $?
       scp -q "$local_file" "${login_as}${host}:$dir/$file_name"
