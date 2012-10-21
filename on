@@ -432,28 +432,6 @@ function call_term() {
    done
 }
 
-#--------------------------------------------------------------
-# functions used for debugging und unit-tests
-#--------------------------------------------------------------
-
-function debug() {
-   [ "$be_verbose" == "true" ] && echo "$@" >&2
-}
-
-function debug_parameters() {
-   echo "be_verbose='$be_verbose'"
-   echo "ignore_error='$ignore_error'"
-   echo "interactive='$interactive'"
-   echo "prefix_with_hostname='$prefix_with_hostname'"
-   echo "host_list='$host_list'"
-   echo "remote_user='$remote_user'"
-   echo "command='$command'"
-   echo "do_commandline='$do_commandline'"
-   echo "local_file='$local_file'"
-   echo "remote_file='$remote_file'"
-   echo "exec_params='${exec_params[@]}'"
-}
-
 function find_hosts() {
    local in_host_list="$1"
    local out_host_list
@@ -482,6 +460,28 @@ function find_hosts() {
    done
 
    echo "$out_host_list"
+}
+
+#--------------------------------------------------------------
+# functions used for debugging und unit-tests
+#--------------------------------------------------------------
+
+function debug() {
+   [ "$be_verbose" == "true" ] && echo "$@" >&2
+}
+
+function debug_parameters() {
+   echo "be_verbose='$be_verbose'"
+   echo "ignore_error='$ignore_error'"
+   echo "interactive='$interactive'"
+   echo "prefix_with_hostname='$prefix_with_hostname'"
+   echo "host_list='$host_list'"
+   echo "remote_user='$remote_user'"
+   echo "command='$command'"
+   echo "do_commandline='$do_commandline'"
+   echo "local_file='$local_file'"
+   echo "remote_file='$remote_file'"
+   echo "exec_params='${exec_params[@]}'"
 }
 
 #--------------------------------------------------------------
