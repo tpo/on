@@ -113,16 +113,16 @@ A few examples what you can do with 'on'
     
     CONFIGURATION
         on will source ~/.on.config on startup. There you can define variables
-        that define host_groups. If your f.ex have a ~/.on.config that contains:
+        that define host_groups. If f.ex. you have a ~/.on.config that contains:
     
             my_servers="server1 server2"
     
         then you can call on like this:
     
-    	on my_servers do ls
+    	    on my_servers do ls
     
-        Since ~/.on.config is being sourced, you use bash scripting there at will
-        f.ex. to define groups of groups etc.
+        Since ~/.on.config is being sourced, you can use bash scripting there at
+        will f.ex. to define groups of groups etc.
     
         Note that the my_servers declatation will override a possibly existing
         host with the strange name "my_servers".
