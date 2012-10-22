@@ -182,7 +182,7 @@ function reset_parameters() {
 function parse_parameters() {
    [ "$1" == "--help" ] && usage
    # parse options
-   while [[ "$1" =~ ^- ]]; do 
+   while [[ "$1" && "$1" =~ ^- ]]; do 
       case "$1" in
          -v) be_verbose=true;;
          -i) interactive=interactive;;
@@ -193,7 +193,7 @@ function parse_parameters() {
       shift
    done
    # read host names
-   while true; do 
+   while [ "$1" ]; do 
       case "$1" in
          as|as|do|get|put|exec|term|list)
             break
@@ -437,7 +437,7 @@ function find_hosts() {
    local out_host_list
    local host
 
-   while [ "$in_host_list" != "" ]; do
+   while [ "$in_host_list" ]; do
       host=$(           echo "$in_host_list" | cut -d" " -f 1    )
       in_host_list=$( echo "$in_host_list" | cut -d" " -f 2- -s)
 
