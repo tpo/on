@@ -268,27 +268,20 @@ function on_error() {
    fi
 }
 
-# do_remote host_list remote_user
-#           "non-interactive"|"interactive"
-#           commandline
+# do_remote host_list "non-interactive"|"interactive" commandline
 #
-# execute commandline on all hosts in host_list
-# with user remote_user. Open connection in "terminal mode"
-# if the third parameter is set as 'interactive'
+# execute commandline on all hosts in host_list. Open connection
+# in "terminal mode" if the third parameter is set as 'interactive'
 #
 # Ex:
 #
-#    do_remote "mail1 mail2" anonymousCoward non-interactive "cat /etc/shadow"
-#    do_remote "webserver" root interactive "dpkg-reconfigure apache2"
+#    do_remote "mail1 root@mail2" non-interactive "cat /etc/shadow"
+#    do_remote "webserver" interactive "dpkg-reconfigure apache2"
 #
 function do_remote() {
    local host_list="$1"
-   local remote_user="$2"
-   local interactive="$3"
-   local commandline="$4"
-
-   local login_as=
-   [ $remote_user ] && login_as="${remote_user}@"
+   local interactive="$2"
+   local commandline="$3"
 
    local terminal=
    [ "$interactive" == "interactive" ] && terminal="-t"
@@ -297,92 +290,74 @@ function do_remote() {
    exec 4>&2 # save original stderr into fd 4, see [1]
 
    for host in $host_list; do
-      debug "Executing: ssh ${login_as}${host} \"$commandline\""
-      ssh $terminal ${login_as}${host} "$commandline" \
-          > >( prefix_with $host >&3 )                \
+      debug "Executing: ssh ${host} \"$commandline\""
+      ssh $terminal ${host} "$commandline" \
+          > >( prefix_with $host >&3 )     \
          2> >( prefix_with $host >&4 )
       # todo $? was $err_state before?
       on_error $host $?
    done
 }
 
-# put_on_remote host_list remote_user local_file remote_file
+# put_on_remote host_list local_file remote_file
 #
-# copy local_file to remote_file on all hosts in
-# host_list with user remote_user
+# copy local_file to remote_file on all hosts in host_list.
 #
 # Ex:
 #
-#    put_on_remote "sun" bjoy fuse /tmp/fuse
+#    put_on_remote "sun" fuse /tmp/fuse
 #
 function put_on_remote() {
    local host_list="$1"
-   local remote_user="$2"
-   local local_file="$3"
-   local remote_file="$4"
-
-   local login_as=
-   [ $remote_user ] && login_as="${remote_user}@"
+   local local_file="$2"
+   local remote_file="$3"
 
    for host in $host_list; do
-      debug "Executing: scp \"$local_file\" \"${login_as}${host}:${remote_file}\""
-      scp "$local_file" "${login_as}${host}:${remote_file}"
+      debug "Executing: scp \"$local_file\" \"${host}:${remote_file}\""
+      scp "$local_file" "$${host}:${remote_file}"
       on_error $host $?
    done
 }
 
-# get_from_remote host_list remote_user remote_file local_file
+# get_from_remote host_list remote_file local_file
 #
-# copy remote_file from all hosts in host_list with
-# remote_user to local_file_$hostname
+# copy remote_file from all hosts in host_list to local_file_$hostname
 #
 # Ex:
 #
-#    get_from_remote "mil" root /etc/passwd passwd
+#    get_from_remote "root@mil" /etc/passwd passwd
 #
 function get_from_remote() {
    local host_list="$1"
-   local remote_user="$2"
-   local remote_file="$3"
-   local local_file="$4"
-
-   local login_as=
-   [ $remote_user ] && login_as="${remote_user}@"
+   local remote_file="$2"
+   local local_file="$3"
 
    for host in $host_list; do
-      debug "Executing: scp \"${login_as}${host}:${remote_file}\" \"${local_file}_${host}\""
-      scp "${login_as}${host}:${remote_file}" "${local_file}_${host}"
+      debug "Executing: scp \"${host}:${remote_file}\" \"${local_file}_${host}\""
+      scp "${host}:${remote_file}" "${local_file}_${host}"
       on_error $host $?
    done
 }
 
-# exec_remote host_list remote_user            \
-#             "non-interactive"|"interactive"  \
+# exec_remote host_list "non-interactive"|"interactive" \
 #             local_file exec_params*
 #
-# copy local_file to all hosts in host_list with user
-# remote_user and execute the file there with arguments exec_params.
-# Open connection in "terminal mode" if the third parameter is set as
-# 'interactive'
+# copy local_file to all hosts in host_list and execute the
+# file there with arguments exec_params. Open connection in
+# "terminal mode" if the third parameter is set as 'interactive'.
 #
 # Ex:
 #
-#    exec_remote "server1 server2 server3" root interactive  \
-#                on switches as admins do ls
+#    exec_remote "server1 server2 server3" interactive /tmp/clean_up file1 file2
 #
 function exec_remote() {
    local host_list="$1"
-   shift
-   local remote_user="$1"
    shift
    local interactive="$1"
    shift
    local local_file="$1"
    shift
    # exec_params are in $@ now
-
-   local login_as=
-   [ $remote_user ] && login_as="${remote_user}@"
 
    local terminal=
    [ "$interactive" == "interactive" ] && terminal="-t"
@@ -391,72 +366,90 @@ function exec_remote() {
 
    # see: http://ninjaverification.wordpress.com/2008/12/17/wrapping-ssh-inside-a-script-and-passing-arbitrary-commands-to-another-program/
    for host in $host_list; do
-      debug "On ${login_as}${host} remotely executing \"$dir/$file_name\"" "$@"
-      dir=$( ssh ${login_as}${host} "mktemp -d" )
+      debug "On ${host} remotely executing \"$dir/$file_name\"" "$@"
+      dir=$( ssh ${host} "mktemp -d" )
       on_error $host $?
-      scp -q "$local_file" "${login_as}${host}:$dir/$file_name"
+      scp -q "$local_file" "${host}:$dir/$file_name"
       on_error $host $?
       (
-        ssh $terminal ${login_as}${host} "$dir/$file_name" "$@"
+        ssh $terminal ${host} "$dir/$file_name" "$@"
 	err_stat=$?              # exit inside on_error would only
         on_error $host $err_stat # terminate this subshell, so we
       ) | prefix_with $host      # need to export $err_stat from it
       [ "$err_stat" != "0" ] && exit $err_stat
 
-      ssh ${login_as}${host} "rm -r $dir"
+      ssh ${host} "rm -r $dir"
       on_error $host $?
    done
 }
 
-# call_term host_list remote_user
+# call_term host_list
 #
-# open a terminal on one host after the other on each of the hosts in
-# host_list
+# open a terminal on one host after the other on each of the hosts
+# in host_list.
 #
 # Ex:
 #
-#    call_term "server1 server2 server3" as app-admin
+#    call_term "server1 server2 php_admin@server3"
 #
 function call_term() {
    local host_list="$1"
-   local remote_user="$2"
-
-   local login_as=
-   [ $remote_user ] && login_as="${remote_user}@"
 
    for host in $host_list; do
-      debug "Opening terminal for ${login_as}${host}"
+      debug "Opening terminal to ${host}"
       (
-        ssh -t ${login_as}${host}
+        ssh -t ${host}
       ) | prefix_with $host
    done
 }
 
-function find_hosts() {
+function resolve_hosts() {
    local in_host_list="$1"
-   local out_host_list
-   local host
+   local remote_user="$2"
+   local out_host_list     # "tpo@mail root@www"
+   local host              # "tpo@mail" -> "mail"
+   local hosts             # "mail www"
+   local user              # "tpo"
 
    while [ "$in_host_list" ]; do
-      host=$(           echo "$in_host_list" | cut -d" " -f 1    )
-      in_host_list=$( echo "$in_host_list" | cut -d" " -f 2- -s)
+      host=$(         echo "$in_host_list" | cut -d " " -f 1    )
+      in_host_list=$( echo "$in_host_list" | cut -d " " -f 2- -s)
 
-      # if the user defines a variable with a name
+      # split off usernames from hosts
+      if [[ "$host" =~ @ ]]; then
+         user=$( echo "$host" | cut -d @ -f 1  )
+         host=$( echo "$host" | cut -d @ -f 2- )
+      else
+         user="$remote_user"
+      fi
+
+      # If the user defines a variable with a name
       # that corresponds to the parameter given,
-      # then return that evale'd variable
-      local aliased_hosts
-      # if host contains a '-' then that can't be a valid bash
-      # variable aka a host_group and thus it's a host
+      # then use the value of that variable. I.e. we
+      # are resolving host_groups.
+
       if [[ "$host" =~ - ]]; then
-         aliased_hosts=''
+         # if host contains a '-' then that can't be a valid bash
+         # variable aka a host_group and thus it's a host
+         hosts="$host"
       else
-         aliased_hosts=$( eval echo -n \$$host )
+         hosts=$( eval echo -n \$$host )
+	 if [ ! "$hosts" ]; then
+	    # there's no variable of that name, thus take it
+	    # as a host name
+            hosts="$host"
+	 fi
       fi
-      if [ "$aliased_hosts" = "" ]; then
-         out_host_list=$( add_to_list "$out_host_list" "$host" )
-      else
-         out_host_list=$( add_to_list "$out_host_list" "$aliased_hosts" )
+
+      if [ "$user" ]; then
+         user="${user}@"
       fi
+
+      # add user back to hosts
+      for host in $hosts; do
+         out_host_list=$( add_to_list "$out_host_list" "$user""$host" )
+      done
+
    done
 
    echo "$out_host_list"
@@ -679,14 +672,14 @@ function test_parse_parameters_term() {
 
 reset_parameters
 parse_parameters "$@"
-# resolve host_groups
-host_list=$( find_hosts "$host_list" )
+# resolve host_groups and add users to hosts
+host_list=$( resolve_hosts "$host_list" "$remote_user" )
 case "$command" in
-   do)   do_remote       "$host_list" "$remote_user" $interactive "$do_commandline" ;;
-   get)  get_from_remote "$host_list" "$remote_user"              "$remote_file" "$local_file" ;;
-   put)  put_on_remote   "$host_list" "$remote_user"              "$local_file"  "$remote_file" ;;
-   exec) exec_remote     "$host_list" "$remote_user" $interactive "$local_file"  "${exec_params[@]}";;
+   do)   do_remote       "$host_list" $interactive "$do_commandline" ;;
+   get)  get_from_remote "$host_list"              "$remote_file" "$local_file" ;;
+   put)  put_on_remote   "$host_list"              "$local_file"  "$remote_file" ;;
+   exec) exec_remote     "$host_list" $interactive "$local_file"  "${exec_params[@]}";;
    list) echo            "$host_list" ;;
-   term) call_term       "$host_list" "$remote_user";;
+   term) call_term       "$host_list" ;;
    *)    usage ;;
 esac
