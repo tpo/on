@@ -1,0 +1,15 @@
+Source: on
+Section: unknown
+Priority: extra
+Maintainer: Tomas Pospisek <tpo_deb@sourcepole.ch>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+Homepage: https://github.com/tpo/on
+Vcs-Git: git://github.com/tpo/on
+
+Package: on
+Architecture: all
+Depends: openssh-client
+Description: work intuitively with remote servers through ssh
+ A unifying wrapper around scp and ssh, that facilitates working
+ with multiple servers at once.
