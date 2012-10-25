@@ -299,7 +299,7 @@ function do_remote() {
 
    for host in $host_list; do
       debug "Executing: ssh ${host} \"$commandline\""
-      if [ ! "$interactive" && "$stdin" ]; then
+      if [ "$stdin" ]; then
          echo -n "$stdin" | ssh $terminal ${host} "$commandline" \
              > >( prefix_with $host >&3 )     \
             2> >( prefix_with $host >&4 )
