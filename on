@@ -284,14 +284,22 @@ function do_remote() {
    local commandline="$3"
 
    local terminal=
-   [ "$interactive" == "interactive" ] && terminal="-t"
+   if [ "$interactive" == "interactive" ]; then
+      terminal="-t"
+   else
+      if read -t 0; then
+         # if there's input on stdin then swallow it
+         # in order to be able to pass it on to each host
+         stdin=$( cat )
+      fi
+   fi
 
    exec 3>&1 # save original stdout into fd 3
    exec 4>&2 # save original stderr into fd 4, see [1]
 
    for host in $host_list; do
       debug "Executing: ssh ${host} \"$commandline\""
-      ssh $terminal ${host} "$commandline" \
+      echo -n "$stdin" | ssh $terminal ${host} "$commandline" \
           > >( prefix_with $host >&3 )     \
          2> >( prefix_with $host >&4 )
       # todo $? was $err_state before?
