@@ -442,9 +442,9 @@ function resolve_hosts() {
       # then use the value of that variable. I.e. we
       # are resolving host_groups.
 
-      if [[ "$host" =~ - ]]; then
-         # if host contains a '-' then that can't be a valid bash
-         # variable aka a host_group and thus it's a host
+      if [[ "$host" =~ -|\. ]]; then
+         # if host contains a '-' or a '.' then that can't be a
+	 # valid bash variable aka a host_group and thus it's a host
          hosts="$host"
       else
          hosts=$( eval echo -n \$$host )
