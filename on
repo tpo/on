@@ -95,7 +95,7 @@ CONFIGURATION
 
     then you can call on like this:
 
-	on my_servers do ls
+        on my_servers do ls
 
     Since ~/.on.config is being sourced, you use bash scripting there at will
     f.ex. to define groups of groups etc.
@@ -381,7 +381,7 @@ function exec_remote() {
       on_error $host $?
       (
         ssh $terminal ${host} "$dir/$file_name" "$@"
-	err_stat=$?              # exit inside on_error would only
+        err_stat=$?              # exit inside on_error would only
         on_error $host $err_stat # terminate this subshell, so we
       ) | prefix_with $host      # need to export $err_stat from it
       [ "$err_stat" != "0" ] && exit $err_stat
@@ -442,11 +442,11 @@ function resolve_hosts() {
          hosts="$host"
       else
          hosts=$( eval echo -n \$$host )
-	 if [ ! "$hosts" ]; then
-	    # there's no variable of that name, thus take it
-	    # as a host name
+         if [ ! "$hosts" ]; then
+            # there's no variable of that name, thus take it
+            # as a host name
             hosts="$host"
-	 fi
+         fi
       fi
 
       if [ "$user" ]; then
