@@ -299,9 +299,15 @@ function do_remote() {
 
    for host in $host_list; do
       debug "Executing: ssh ${host} \"$commandline\""
-      echo -n "$stdin" | ssh $terminal ${host} "$commandline" \
-          > >( prefix_with $host >&3 )     \
-         2> >( prefix_with $host >&4 )
+      if [ ! "$interactive" && "$stdin" ]; then
+         echo -n "$stdin" | ssh $terminal ${host} "$commandline" \
+             > >( prefix_with $host >&3 )     \
+            2> >( prefix_with $host >&4 )
+      else
+         ssh $terminal ${host} "$commandline" \
+             > >( prefix_with $host >&3 )     \
+            2> >( prefix_with $host >&4 )
+      fi
       # todo $? was $err_state before?
       on_error $host $?
    done
