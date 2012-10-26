@@ -328,7 +328,7 @@ function put_on_remote() {
 
    for host in $host_list; do
       debug "Executing: scp \"$local_file\" \"${host}:${remote_file}\""
-      scp "$local_file" "$${host}:${remote_file}"
+      scp "$local_file" "${host}:${remote_file}"
       on_error $host $?
    done
 }
