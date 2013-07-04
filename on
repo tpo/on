@@ -324,10 +324,10 @@ function do_remote() {
          if [[ "${@:+isset}" == "isset" ]]; then
             ssh $terminal ${host} "$commandline" "$@" \
                 > >( prefix_with $host >&3 )          \
+               2> >( prefix_with $host >&4 )
          else
             ssh $terminal ${host} "$commandline"      \
                 > >( prefix_with $host >&3 )          \
-               2> >( prefix_with $host >&4 )
                2> >( prefix_with $host >&4 )
 	 fi
       fi
