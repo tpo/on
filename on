@@ -149,6 +149,12 @@ declare -a exec_params
 exec_params=         #         "         'exec'          command
 
 #--------------------------------------------------------------
+# global variable - set by do_remote, used by exec_remote
+# err_status can be masked out by a local variable err_status!
+#--------------------------------------------------------------
+err_status=0
+
+#--------------------------------------------------------------
 # functions
 #--------------------------------------------------------------
 
@@ -271,7 +277,8 @@ function on_error() {
 # do_remote host_list "non-interactive"|"interactive" commandline
 #
 # execute commandline on all hosts in host_list. Open connection
-# in "terminal mode" if the third parameter is set as 'interactive'
+# in "terminal mode" if the third parameter is set as 'interactive'.
+# Will set the global $err_status variable.
 #
 # Ex:
 #
@@ -280,8 +287,12 @@ function on_error() {
 #
 function do_remote() {
    local host_list="$1"
-   local interactive="$2"
-   local commandline="$3"
+   shift
+   local interactive="$1"
+   shift
+   local commandline="$1"
+   shift
+   # additiona params are now in $@
 
    local terminal=
    if [ "$interactive" == "interactive" ]; then
@@ -300,16 +311,29 @@ function do_remote() {
    for host in $host_list; do
       debug "Executing: ssh ${host} \"$commandline\""
       if [ "$stdin" ]; then
-         echo -n "$stdin" | ssh $terminal ${host} "$commandline" \
-             > >( prefix_with $host >&3 )     \
-            2> >( prefix_with $host >&4 )
+         if [[ "${@:+isset}" == "isset" ]]; then
+            echo -n "$stdin" | ssh $terminal ${host} "$commandline" "$@" \
+                > >( prefix_with $host >&3 )                             \
+               2> >( prefix_with $host >&4 )
+	 else
+            echo -n "$stdin" | ssh $terminal ${host} "$commandline"      \
+                > >( prefix_with $host >&3 )                             \
+               2> >( prefix_with $host >&4 )
+	 fi
       else
-         ssh $terminal ${host} "$commandline" \
-             > >( prefix_with $host >&3 )     \
-            2> >( prefix_with $host >&4 )
+         if [[ "${@:+isset}" == "isset" ]]; then
+            ssh $terminal ${host} "$commandline" "$@" \
+                > >( prefix_with $host >&3 )          \
+         else
+            ssh $terminal ${host} "$commandline"      \
+                > >( prefix_with $host >&3 )          \
+               2> >( prefix_with $host >&4 )
+               2> >( prefix_with $host >&4 )
+	 fi
       fi
-      # todo $? was $err_state before?
-      on_error $host $?
+      # set global $err_status, used by exec_remote
+      err_status=$?
+      on_error $host $err_status
    done
 }
 
@@ -373,9 +397,6 @@ function exec_remote() {
    shift
    # exec_params are in $@ now
 
-   local terminal=
-   [ "$interactive" == "interactive" ] && terminal="-t"
-
    local file_name=$( basename "$local_file" )
 
    # see: http://ninjaverification.wordpress.com/2008/12/17/wrapping-ssh-inside-a-script-and-passing-arbitrary-commands-to-another-program/
@@ -385,15 +406,21 @@ function exec_remote() {
       on_error $host $?
       scp -q "$local_file" "${host}:$dir/$file_name"
       on_error $host $?
-      (
-        ssh $terminal ${host} "$dir/$file_name" "$@"
-        err_stat=$?              # exit inside on_error would only
-        on_error $host $err_stat # terminate this subshell, so we
-      ) | prefix_with $host      # need to export $err_stat from it
-      [ "$err_stat" != "0" ] && exit $err_stat
+
+      tmp_ignore_error=$ignore_error
+      ignore_error=true
+         # will set $err_status
+         if [[ "${@:+isset}" == "isset" ]]; then
+            do_remote $host $interactive "$dir/$file_name" "$@"
+         else
+            do_remote $host $interactive "$dir/$file_name"
+	 fi
+      ignore_error=$tmp_ignore_error
 
       ssh ${host} "rm -r $dir"
-      on_error $host $?
+      rm_err_status=$?
+      on_error $host $err_status
+      on_error $host $rm_err_status
    done
 }
 
