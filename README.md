@@ -126,7 +126,15 @@ A few examples what you can do with 'on'
     
         Note that the my_servers declatation will override a possibly existing
         host with the strange name "my_servers".
-    
+
+        If you want to reuse the host group definitions from ansible, then add
+        this line to your ~/.on.config:
+
+            parse_ansible_host_config [path_to_ansible_host_file]
+
+        If you do not provide the 'path_to_ansible_host_file' argument, then on
+        will read the default ansible host configuration file '/etc/ansible/hosts'.
+
     ENVIRONMENT
         Setting DEBUG will execute on with the -x bash flag set.
     
