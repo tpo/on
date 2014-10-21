@@ -103,6 +103,14 @@ CONFIGURATION
     Note that the my_servers declatation will override a possibly existing
     host with the strange name "my_servers".
 
+    If you want to reuse the host group definitions from ansible, then add
+    this line to your ~/.on.config:
+
+        parse_ansible_host_config [path_to_ansible_host_file]
+
+    If you do not provide the 'path_to_ansible_host_file' argument, then on
+    will read the default ansible host configuration file '/etc/ansible/hosts'.
+
 ENVIRONMENT
     Setting DEBUG will execute on with the -x bash flag set.
 
@@ -494,6 +502,99 @@ function resolve_hosts() {
    done
 
    echo "$out_host_list"
+}
+
+#--------------------------------------------------------------
+# parse ansible hosts configuration file
+#
+# this function can be used from the ~/.on.config file
+#--------------------------------------------------------------
+
+# parse ansible host configuration and
+# set host variables appropriately for 'on'
+#
+# call like this:
+#
+#     parse_ansible_host_config [path_to_config_file]
+#
+# if 'path_to_config_file' is not set, then the default
+# ansible host config file '/etc/ansible/hosts' is used
+
+function parse_cfg() {
+  local cfg="$1"
+  local ignore_hosts=false
+  local current_group=
+  local all=
+
+  # read line by line
+  # - delete comments
+  # - delete additional configuration after host names,
+  #   that is everything after a space
+  # - delete empty lines
+  cat "$cfg" | sed 's/#.*//' | sed 's/ .*//' | sed '/^$/d' | \
+    while read line; do
+
+      # ansible host group declaration: [foo]
+      if   [[ "$line" =~ ^\[ ]]; then
+        ignore_hosts=false
+
+        # ansible host group variables or such: [foo:vars]
+        if [[ "$line" =~ : ]]; then
+          debug "vars   : $line"
+          ignore_hosts=true
+
+        # ansible host group : [foo]
+        else
+          debug "group  : $line"
+          # tr: [foo-bar] -> foo_bar
+          current_group=$( echo "$line" | tr -d '[' | tr -d ']' | tr '-' '_' )
+          #debug "current_group=$current_group"
+        fi
+
+      # ansible host
+      else
+
+        if [ "$ignore_hosts" == "true" ]; then
+          debug "ignore : $line"
+        else
+          debug "host   : $line"
+
+          if [ -z "$all" ]; then
+            all="$line"
+          else
+            all="$all $line"
+          fi
+          assignement="all='$all'"
+	  echo "$assignement"
+	  debug "$assignement"
+
+          if [ "$current_group" ]; then
+            group_hosts="$( eval "echo \"\$$current_group\"" )"
+            if [ -z "$group_hosts" ]; then
+              eval "$current_group=\"$line\""
+            else
+              eval "$current_group=\"\$group_hosts $line\""
+            fi
+
+            assignement="$current_group='$( eval "echo \"\$$current_group\"" )'"
+	    echo  "$assignement"
+	    debug "$assignement"
+          fi
+        fi
+
+      fi
+    done
+}
+
+function parse_ansible_host_config() {
+  # default
+  local cfg=/etc/ansible/hosts
+
+  if [ "$1" ]; then
+    cfg="$1"
+  fi
+
+  eval "$( parse_cfg "$cfg" )"
 }
 
 #--------------------------------------------------------------
