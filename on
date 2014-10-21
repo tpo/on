@@ -89,7 +89,7 @@ OPTIONS
 
 CONFIGURATION
     on will source ~/.on.config on startup. There you can define variables
-    that define host_groups. If your f.ex have a ~/.on.config that contains:
+    that define host_groups. If f.ex you have a ~/.on.config that contains:
 
         my_servers="server1 server2"
 
