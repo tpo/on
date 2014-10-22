@@ -106,7 +106,11 @@ A few examples what you can do with 'on'
         -f (as in force) ignore errors when executing the "do", "get", "put"
            or "exec" commands. Just continue on the next host. Default is to
            abort on error.
-    
+
+        -o "SSH OPTIONS"
+           options for ssh, will be passed on as is to ssh like this:
+           ssh -o "SSH OPTIONS" ...
+
         -p prefix all output with hostname. Default is to display the output
            (stdout) unchanged. This option does not apply to the "get" and
            "put" commands.

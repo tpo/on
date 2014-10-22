@@ -83,6 +83,10 @@ OPTIONS
        or "exec" commands. Just continue on the next host. Default is to
        abort on error.
 
+    -o "SSH OPTIONS"
+       options for ssh, will be passed on as is to ssh like this:
+       ssh -o "SSH OPTIONS" ...
+
     -p prefix all output with hostname. Default is to display the output
        (stdout) unchanged. This option does not apply to the "get" and
        "put" commands.
@@ -183,6 +187,7 @@ function reset_parameters() {
    be_verbose=false
    ignore_error=false
    interactive=non-interactive
+   ssh_options=
    prefix_with_hostname=false
    host_list=
    remote_user=
@@ -201,6 +206,7 @@ function parse_parameters() {
          -v) be_verbose=true;;
          -i) interactive=interactive;;
          -f) ignore_error=true;;
+         -o) ssh_options="$2"; shift;;
          -p) prefix_with_hostname=true;;
          *)  usage ;;
       esac
@@ -282,7 +288,7 @@ function on_error() {
    fi
 }
 
-# do_remote host_list "non-interactive"|"interactive" commandline
+# do_remote host_list "non-interactive"|"interactive" ssh_options commandline
 #
 # execute commandline on all hosts in host_list. Open connection
 # in "terminal mode" if the third parameter is set as 'interactive'.
@@ -290,13 +296,15 @@ function on_error() {
 #
 # Ex:
 #
-#    do_remote "mail1 root@mail2" non-interactive "cat /etc/shadow"
-#    do_remote "webserver" interactive "dpkg-reconfigure apache2"
+#    do_remote "mail1 root@mail2"  non-interactive  "Port=2223" "cat /etc/shadow"
+#    do_remote "webserver"             interactive  ""          "dpkg-reconfigure apache2"
 #
 function do_remote() {
    local host_list="$1"
    shift
    local interactive="$1"
+   shift
+   local ssh_options="$1"
    shift
    local commandline="$1"
    shift
@@ -313,31 +321,35 @@ function do_remote() {
       fi
    fi
 
+   if [ "$ssh_options" ]; then
+      ssh_options="-o $ssh_options"
+   fi
+
    exec 3>&1 # save original stdout into fd 3
    exec 4>&2 # save original stderr into fd 4, see [1]
 
    for host in $host_list; do
-      debug "Executing: ssh ${host} \"$commandline\""
+      debug "Executing: ssh $ssh_options ${host} \"$commandline\""
       if [ "$stdin" ]; then
          if [[ "${@:+isset}" == "isset" ]]; then
-            echo -n "$stdin" | ssh $terminal ${host} "$commandline" "$@" \
+            echo -n "$stdin" | ssh $terminal $ssh_options ${host} "$commandline" "$@" \
                 > >( prefix_with $host >&3 )                             \
                2> >( prefix_with $host >&4 )
-	 else
-            echo -n "$stdin" | ssh $terminal ${host} "$commandline"      \
+         else
+            echo -n "$stdin" | ssh $terminal $ssh_options ${host} "$commandline"      \
                 > >( prefix_with $host >&3 )                             \
                2> >( prefix_with $host >&4 )
-	 fi
+         fi
       else
          if [[ "${@:+isset}" == "isset" ]]; then
-            ssh $terminal ${host} "$commandline" "$@" \
+            ssh $terminal $ssh_options ${host} "$commandline" "$@" \
                 > >( prefix_with $host >&3 )          \
                2> >( prefix_with $host >&4 )
          else
-            ssh $terminal ${host} "$commandline"      \
+            ssh $terminal $ssh_options ${host} "$commandline"      \
                 > >( prefix_with $host >&3 )          \
                2> >( prefix_with $host >&4 )
-	 fi
+         fi
       fi
       # set global $err_status, used by exec_remote
       err_status=$?
@@ -386,7 +398,7 @@ function get_from_remote() {
 }
 
 # exec_remote host_list "non-interactive"|"interactive" \
-#             local_file exec_params*
+#             ssh_options local_file exec_params*
 #
 # copy local_file to all hosts in host_list and execute the
 # file there with arguments exec_params. Open connection in
@@ -394,12 +406,14 @@ function get_from_remote() {
 #
 # Ex:
 #
-#    exec_remote "server1 server2 server3" interactive /tmp/clean_up file1 file2
+#    exec_remote "server1 server2 server3" interactive ssh_options /tmp/clean_up file1 file2
 #
 function exec_remote() {
    local host_list="$1"
    shift
    local interactive="$1"
+   shift
+   local ssh_options="$1"
    shift
    local local_file="$1"
    shift
@@ -407,25 +421,29 @@ function exec_remote() {
 
    local file_name=$( basename "$local_file" )
 
+   if [ "$ssh_options" ]; then
+      local_ssh_options="-o \"$ssh_options\""
+   fi
+
    # see: http://ninjaverification.wordpress.com/2008/12/17/wrapping-ssh-inside-a-script-and-passing-arbitrary-commands-to-another-program/
    for host in $host_list; do
       debug "On ${host} remotely executing \"$dir/$file_name\"" "$@"
       dir=$( ssh ${host} "mktemp -d" )
       on_error $host $?
-      scp -q "$local_file" "${host}:$dir/$file_name"
+      scp -q $local_ssh_options "$local_file" "${host}:$dir/$file_name"
       on_error $host $?
 
       tmp_ignore_error=$ignore_error
       ignore_error=true
          # will set $err_status
          if [[ "${@:+isset}" == "isset" ]]; then
-            do_remote $host $interactive "$dir/$file_name" "$@"
+            do_remote $host $interactive $ssh_options "$dir/$file_name" "$@"
          else
-            do_remote $host $interactive "$dir/$file_name"
-	 fi
+            do_remote $host $interactive $ssh_options "$dir/$file_name"
+         fi
       ignore_error=$tmp_ignore_error
 
-      ssh ${host} "rm -r $dir"
+      ssh $local_ssh_options ${host} "rm -r $dir"
       rm_err_status=$?
       on_error $host $err_status
       on_error $host $rm_err_status
@@ -479,7 +497,7 @@ function resolve_hosts() {
 
       if [[ "$host" =~ -|\. ]]; then
          # if host contains a '-' or a '.' then that can't be a
-	 # valid bash variable aka a host_group and thus it's a host
+         # valid bash variable aka a host_group and thus it's a host
          hosts="$host"
       else
          hosts=$( eval echo -n \$$host )
@@ -817,10 +835,10 @@ parse_parameters "$@"
 # resolve host_groups and add users to hosts
 host_list=$( resolve_hosts "$host_list" "$remote_user" )
 case "$command" in
-   do)   do_remote       "$host_list" $interactive "$do_commandline" ;;
-   get)  get_from_remote "$host_list"              "$remote_file" "$local_file" ;;
-   put)  put_on_remote   "$host_list"              "$local_file"  "$remote_file" ;;
-   exec) exec_remote     "$host_list" $interactive "$local_file"  "${exec_params[@]}";;
+   do)   do_remote       "$host_list" $interactive "$ssh_options" "$do_commandline" ;;
+   get)  get_from_remote "$host_list"              "$ssh_options" "$remote_file" "$local_file" ;;
+   put)  put_on_remote   "$host_list"              "$ssh_options" "$local_file"  "$remote_file" ;;
+   exec) exec_remote     "$host_list" $interactive "$ssh_options" "$local_file"  "${exec_params[@]}";;
    list) echo            "$host_list" ;;
    term) call_term       "$host_list" ;;
    *)    usage ;;
