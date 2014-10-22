@@ -93,7 +93,7 @@ OPTIONS
 
 CONFIGURATION
     on will source ~/.on.config on startup. There you can define variables
-    that define host_groups. If f.ex you have a ~/.on.config that contains:
+    that define host_groups. If f.ex. you have a ~/.on.config that contains:
 
         my_servers="server1 server2"
 
@@ -201,7 +201,7 @@ function reset_parameters() {
 function parse_parameters() {
    [ "$1" == "--help" ] && usage
    # parse options
-   while [[ "$1" && "$1" =~ ^- ]]; do 
+   while [[ "$1" && "$1" =~ ^- ]]; do
       case "$1" in
          -v) be_verbose=true;;
          -i) interactive=interactive;;
@@ -213,7 +213,7 @@ function parse_parameters() {
       shift
    done
    # read host names
-   while [ "$1" ]; do 
+   while [ "$1" ]; do
       case "$1" in
          as|as|do|get|put|exec|term|list)
             break
@@ -583,8 +583,8 @@ function parse_cfg() {
             all="$all $line"
           fi
           assignement="all='$all'"
-	  echo "$assignement"
-	  debug "$assignement"
+          echo "$assignement"
+          debug "$assignement"
 
           if [ "$current_group" ]; then
             group_hosts="$( eval "echo \"\$$current_group\"" )"
@@ -595,8 +595,8 @@ function parse_cfg() {
             fi
 
             assignement="$current_group='$( eval "echo \"\$$current_group\"" )'"
-	    echo  "$assignement"
-	    debug "$assignement"
+            echo  "$assignement"
+            debug "$assignement"
           fi
         fi
 
