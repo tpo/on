@@ -107,6 +107,8 @@ CONFIGURATION
     Note that the my_servers declatation will override a possibly existing
     host with the strange name "my_servers".
 
+    ANSIBLE
+
     If you want to reuse the host group definitions from ansible, then add
     this line to your ~/.on.config:
 
@@ -114,6 +116,9 @@ CONFIGURATION
 
     If you do not provide the 'path_to_ansible_host_file' argument, then on
     will read the default ansible host configuration file '/etc/ansible/hosts'.
+
+    Note that dashes in group names will be replaced by underscores. A group
+    named 'lxc-vms' will thus become 'lxc_vms'.
 
 ENVIRONMENT
     Setting DEBUG will execute on with the -x bash flag set.

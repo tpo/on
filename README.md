@@ -39,7 +39,7 @@ A few examples what you can do with 'on'
     SYNOPSIS
       on [options] host_list [as remote_user] command
       on           host_list                  list
-      
+    
       COMMANDS
         do    "some; commands and -options"
         get   /remote/file [/local/file]
@@ -51,12 +51,12 @@ A few examples what you can do with 'on'
     DESCRIPTION
     
         on executes "command" on one or more hosts defined by host_list.
-       
+    
         host_list is a list of host names separated by spaces and enclosed
         in parenthesis. A host_list can also contain host_groups which will
         be expanded first. A host_group declaration will override a host of
         the same name. See CONFIGURATION below for host_group.
-       
+    
         The hosts can not be named "as", "do", "get", "put", "exec", "term",
         "list". In case you use such names you need to alias them through
         a host_group.
@@ -106,11 +106,11 @@ A few examples what you can do with 'on'
         -f (as in force) ignore errors when executing the "do", "get", "put"
            or "exec" commands. Just continue on the next host. Default is to
            abort on error.
-
+    
         -o "SSH OPTIONS"
            options for ssh, will be passed on as is to ssh like this:
            ssh -o "SSH OPTIONS" ...
-
+    
         -p prefix all output with hostname. Default is to display the output
            (stdout) unchanged. This option does not apply to the "get" and
            "put" commands.
@@ -123,22 +123,27 @@ A few examples what you can do with 'on'
     
         then you can call on like this:
     
-    	    on my_servers do ls
+            on my_servers do ls
     
-        Since ~/.on.config is being sourced, you can use bash scripting there at
-        will f.ex. to define groups of groups etc.
+        Since ~/.on.config is being sourced, you can use bash scripting there
+        at will f.ex. to define groups of groups etc.
     
         Note that the my_servers declatation will override a possibly existing
         host with the strange name "my_servers".
-
+    
+        ANSIBLE
+    
         If you want to reuse the host group definitions from ansible, then add
         this line to your ~/.on.config:
-
+    
             parse_ansible_host_config [path_to_ansible_host_file]
-
+    
         If you do not provide the 'path_to_ansible_host_file' argument, then on
         will read the default ansible host configuration file '/etc/ansible/hosts'.
-
+    
+        Note that dashes in group names will be replaced by underscores. A group
+        named 'lxc-vms' will thus become 'lxc_vms'.
+    
     ENVIRONMENT
         Setting DEBUG will execute on with the -x bash flag set.
     
@@ -150,4 +155,4 @@ A few examples what you can do with 'on'
     
     AUTHOR
         Tomas Pospisek <tpo_deb@sourcepole.ch>
-
+    
