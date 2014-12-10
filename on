@@ -372,12 +372,17 @@ function do_remote() {
 #
 function put_on_remote() {
    local host_list="$1"
+   local ssh_options="$2"
    local local_file="$2"
    local remote_file="$3"
 
+   if [ "$ssh_options" ]; then
+      ssh_options="-o $ssh_options"
+   fi
+
    for host in $host_list; do
-      debug "Executing: scp \"$local_file\" \"${host}:${remote_file}\""
-      scp "$local_file" "${host}:${remote_file}"
+      debug "Executing: scp $ssh_options \"$local_file\" \"${host}:${remote_file}\""
+      scp $ssh_options "$local_file" "${host}:${remote_file}"
       on_error $host $?
    done
 }
@@ -392,12 +397,17 @@ function put_on_remote() {
 #
 function get_from_remote() {
    local host_list="$1"
-   local remote_file="$2"
-   local local_file="$3"
+   local ssh_options="$2"
+   local remote_file="$3"
+   local local_file="$4"
+
+   if [ "$ssh_options" ]; then
+      ssh_options="-o $ssh_options"
+   fi
 
    for host in $host_list; do
-      debug "Executing: scp \"${host}:${remote_file}\" \"${local_file}_${host}\""
-      scp "${host}:${remote_file}" "${local_file}_${host}"
+      debug "Executing: scp $ssh_options \"${host}:${remote_file}\" \"${local_file}_${host}\""
+      scp $ssh_options "${host}:${remote_file}" "${local_file}_${host}"
       on_error $host $?
    done
 }
@@ -466,11 +476,16 @@ function exec_remote() {
 #
 function call_term() {
    local host_list="$1"
+   local ssh_options="$2"
+
+   if [ "$ssh_options" ]; then
+      ssh_options="-o $ssh_options"
+   fi
 
    for host in $host_list; do
       debug "Opening terminal to ${host}"
       (
-        ssh -t ${host}
+        ssh -t $ssh_options ${host}
       ) | prefix_with $host
    done
 }
@@ -845,6 +860,6 @@ case "$command" in
    put)  put_on_remote   "$host_list"              "$ssh_options" "$local_file"  "$remote_file" ;;
    exec) exec_remote     "$host_list" $interactive "$ssh_options" "$local_file"  "${exec_params[@]}";;
    list) echo            "$host_list" ;;
-   term) call_term       "$host_list" ;;
+   term) call_term       "$host_list"              "$ssh_options";;
    *)    usage ;;
 esac
