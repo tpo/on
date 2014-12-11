@@ -437,7 +437,7 @@ function exec_remote() {
    local file_name=$( basename "$local_file" )
 
    if [ "$ssh_options" ]; then
-      local_ssh_options="-o \"$ssh_options\""
+      local_ssh_options="-o $ssh_options"
    fi
 
    # see: http://ninjaverification.wordpress.com/2008/12/17/wrapping-ssh-inside-a-script-and-passing-arbitrary-commands-to-another-program/
