@@ -373,8 +373,8 @@ function do_remote() {
 function put_on_remote() {
    local host_list="$1"
    local ssh_options="$2"
-   local local_file="$2"
-   local remote_file="$3"
+   local local_file="$3"
+   local remote_file="$4"
 
    if [ "$ssh_options" ]; then
       ssh_options="-o $ssh_options"
