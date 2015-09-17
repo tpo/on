@@ -52,13 +52,13 @@ A few examples what you can do with 'on'
     
         on executes "command" on one or more hosts defined by host_list.
     
-        host_list is a list of host names separated by spaces and enclosed
-        in parenthesis. A host_list can also contain host_groups which will
-        be expanded first. A host_group declaration will override a host of
-        the same name. See CONFIGURATION below for host_group.
+        host_list is a list of host names separated by spaces. A host_list
+        can also contain host_groups which will be expanded first. A
+        host_group declaration will override a host of the same name. See
+        CONFIGURATION below for host_group.
     
-        The hosts can not be named "as", "do", "get", "put", "exec", "term",
-        "list". In case you use such names you need to alias them through
+        The hosts can not be named "as", "do", "get", "put", "exec", "term"
+        or "list". In case you use such names you need to alias them through
         a host_group.
     
         The command is allways executed sequentially, one host after the other.
