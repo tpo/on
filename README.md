@@ -131,18 +131,15 @@ A few examples what you can do with 'on'
         Note that the my_servers declatation will override a possibly existing
         host with the strange name "my_servers".
     
-        ANSIBLE
+      ANSIBLE
     
-        If you want to reuse the host group definitions from ansible, then add
-        this line to your ~/.on.config:
+        If you want to reuse the host (and host group) definitions from ansible,
+        do this:
     
-            parse_ansible_host_config [path_to_ansible_host_file]
+            on $( ansible --list-hosts all ) do ..
     
-        If you do not provide the 'path_to_ansible_host_file' argument, then on
-        will read the default ansible host configuration file '/etc/ansible/hosts'.
-    
-        Note that dashes in group names will be replaced by underscores. A group
-        named 'lxc-vms' will thus become 'lxc_vms'.
+        That will list alle hosts known to ansible. With that method you can
+        use all the power of ansible's host filtering.
     
     ENVIRONMENT
         Setting DEBUG will execute on with the -x bash flag set.
