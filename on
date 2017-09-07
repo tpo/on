@@ -85,7 +85,13 @@ OPTIONS
 
     -o "SSH OPTIONS"
        options for ssh, will be passed on as is to ssh like this:
-       ssh -o "SSH OPTIONS" ...
+
+         ssh -o "SSH OPTIONS" ...
+
+       Something like this might come in handy, if not all host are
+       reachable all the time:
+
+         on -f -o "ConnectTimeout=5" all_machines do ...
 
     -p prefix all output with hostname. Default is to display the output
        (stdout) unchanged. This option does not apply to the "get" and
