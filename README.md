@@ -98,6 +98,7 @@ A few examples what you can do with 'on'
         term  will open a terminal (shell) on each remote machine
     
     OPTIONS
+       generic
         -v be verbose on what on is doing (on which hosts!)
     
         -i interactive - stdin from the terminal will be forwarded to the
@@ -120,6 +121,9 @@ A few examples what you can do with 'on'
         -p prefix all output with hostname. Default is to display the output
            (stdout) unchanged. This option does not apply to the "get" and
            "put" commands.
+    
+      list
+        --newline list newline separated instead of space separated
     
     CONFIGURATION
         on will source ~/.on.config on startup. There you can define variables
