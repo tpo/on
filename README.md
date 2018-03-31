@@ -122,8 +122,8 @@ A few examples what you can do with 'on'
            (stdout) unchanged. This option does not apply to the "get" and
            "put" commands.
     
-      list
-        --newline list newline separated instead of space separated
+       list
+        --newline list newline separated instead of space separated
     
     CONFIGURATION
         on will source ~/.on.config on startup. There you can define variables
@@ -144,12 +144,20 @@ A few examples what you can do with 'on'
       ANSIBLE
     
         If you want to reuse the host (and host group) definitions from ansible,
-        do this:
+        insert this into ~/.on.config:
     
-            on $( ansible --list-hosts all ) do ..
+            ansible=$( ansible --list-hosts all | tail -n +2 )
     
-        That will list alle hosts known to ansible. With that method you can
-        use all the power of ansible's host filtering.
+        After that you can use the "ansible" group like this:
+    
+            on ansible do ..
+    
+        Alternatively you can filter hosts via ansible like this:
+    
+            on $( ansible --list-hosts web_servers | tail -n +2 ) do ...
+    
+        Where web_servers is some group you defined in the ansible inventory.
+        With that method you can use all the power of ansible's host filtering.
     
     ENVIRONMENT
         Setting DEBUG will execute on with the -x bash flag set.
