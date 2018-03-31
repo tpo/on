@@ -98,8 +98,8 @@ OPTIONS
        (stdout) unchanged. This option does not apply to the "get" and
        "put" commands.
 
-  list
-    --newline list newline separated instead of space separated
+   list
+    --newline list newline separated instead of space separated
 
 CONFIGURATION
     on will source ~/.on.config on startup. There you can define variables
@@ -167,7 +167,7 @@ command=
 do_commandline=      # only set with the 'do'                    command
 local_file=          #         "         'get', 'put' and 'exec' commands
 remote_file=         #         "         'get', 'put' and 'exec' commands
-list_separator=      #                   'list'                  command
+list_separator=      #                   'list'                  command
 
 # exec_params is an array
 declare -a exec_params
@@ -554,13 +554,13 @@ function resolve_hosts() {
 
 # call like this:
 #
-#     do_list "host1 host2" "$list_separator"
+#     do_list "host1 host2" "$list_separator"
 #
 function do_list() {
-   local hosts="$1"
-   local list_separator="$2"
+   local hosts="$1"
+   local list_separator="$2"
 
-   echo "$hosts" | sed "s/ /$list_separator/g"
+   echo "$hosts" | sed "s/ /$list_separator/g"
 }
 
 #--------------------------------------------------------------
@@ -787,7 +787,7 @@ case "$command" in
    get)  get_from_remote "$host_list"              "$ssh_options" "$remote_file" "$local_file" ;;
    put)  put_on_remote   "$host_list"              "$ssh_options" "$local_file"  "$remote_file" ;;
    exec) exec_remote     "$host_list" $interactive "$ssh_options" "$local_file"  "${exec_params[@]}";;
-   list) do_list         "$host_list" "$list_separator";;
+   list) do_list         "$host_list" "$list_separator";;
    term) call_term       "$host_list"              "$ssh_options";;
    *)    usage ;;
 esac
