@@ -1,6 +1,6 @@
 `on` is a `ssh` wrapper, that makes `ssh` more intuitive to use.
 
-### A few examples what you can do with 'on'
+### A few examples of what you can do with 'on'
 
     $ on mail www do uptime
      14:57:17 up 12 days,  2:00,  2 users,  load average: 1.47, 1.62, 1.66
