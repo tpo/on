@@ -135,6 +135,24 @@ CONFIGURATION
     Where web_servers is some group you defined in the ansible inventory.
     With that method you can use all the power of ansible's host filtering.
 
+  APT-DATER
+
+    If you want to reuse the host groups from apt-dater, insert the
+    below into ~/.on.config. Prerequisites are an installed xmlstarlet and
+    a hosts.xml config file of apt-dater that has group names that also
+    work as variable names:
+
+        local __cfg=~/.config/apt-dater/hosts.xml
+        # all hosts from apt-dater:
+        #
+        apt_dater=\$( xmlstarlet sel -t -v "/hosts/group/host/@name" \$__cfg )
+        #
+        local __groups=\$( xmlstarlet sel -t -v "/hosts/group/@name" \$__cfg )
+        for i \$__groups; do
+              local __hosts=\$( xmlstarlet sel -t -v "/hosts/group[@name='\$i']/host/@name" \$__cfg )
+              eval "\$i=\"\$__hosts\""
+        done
+
 ENVIRONMENT
     Setting DEBUG will execute on with the -x bash flag set.
 
